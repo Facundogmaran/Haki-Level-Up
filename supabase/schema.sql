@@ -55,8 +55,10 @@ insert into xp_rules (tipo, xp_por_unidad, descripcion, tope_diario) values
 
 -- ============================================================
 -- Log crudo de eventos de Salud recibidos del Atajo de iPhone
--- external_id: fecha (YYYY-MM-DD) para pasos/sueno/mindfulness,
---              o el UUID del entrenamiento (HealthKit) para 'entrenamiento'
+-- external_id: fecha (YYYY-MM-DD). En v1, 'entrenamiento' también se
+-- agrega por día (suma de minutos de todos los entrenamientos del día),
+-- no por entrenamiento individual, para simplificar el Atajo de iOS.
+-- Reenviar el mismo external_id actualiza (UPSERT) el valor del día.
 -- ============================================================
 create table health_events (
   id bigint generated always as identity primary key,
@@ -165,8 +167,10 @@ as $$
 $$;
 
 -- ============================================================
--- Trigger: al insertar un health_event, calcular su XP (respetando
--- el tope diario por tipo) y aplicar XP/nivel/puntos al personaje
+-- Trigger: al insertar O actualizar un health_event (re-sync del
+-- mismo día con un valor nuevo), recalcular su XP respetando el
+-- tope diario por tipo, y aplicar solo la DIFERENCIA de XP/nivel/
+-- puntos al personaje (nunca resta si el valor bajó).
 -- ============================================================
 create or replace function fn_aplicar_health_event()
 returns trigger
@@ -176,7 +180,8 @@ declare
   v_regla xp_rules%rowtype;
   v_xp_cruda numeric;
   v_xp_ya_hoy numeric;
-  v_xp_aplicada numeric;
+  v_xp_nueva numeric;
+  v_delta numeric;
   v_puntos_por_nivel numeric;
 begin
   select * into v_regla from xp_rules where tipo = new.tipo;
@@ -186,38 +191,48 @@ begin
     else new.valor * v_regla.xp_por_unidad
   end;
 
+  -- XP ya otorgada hoy para este tipo, en OTRAS filas (excluye esta misma fila)
   select coalesce(sum(xp_otorgada), 0) into v_xp_ya_hoy
     from health_events
-    where character_id = new.character_id and tipo = new.tipo and fecha = new.fecha;
+    where character_id = new.character_id and tipo = new.tipo and fecha = new.fecha
+      and id is distinct from new.id;
 
-  v_xp_aplicada := greatest(0, least(v_xp_cruda, v_regla.tope_diario - v_xp_ya_hoy));
+  v_xp_nueva := greatest(0, least(v_xp_cruda, v_regla.tope_diario - v_xp_ya_hoy));
 
-  new.xp_otorgada := v_xp_aplicada;
+  if TG_OP = 'UPDATE' then
+    v_delta := v_xp_nueva - old.xp_otorgada;
+  else
+    v_delta := v_xp_nueva;
+  end if;
 
-  select valor into v_puntos_por_nivel from game_config where clave = 'puntos_por_nivel';
+  new.xp_otorgada := v_xp_nueva;
 
-  update character
-    set xp_total = xp_total + v_xp_aplicada
-    where id = new.character_id;
+  if v_delta > 0 then
+    select valor into v_puntos_por_nivel from game_config where clave = 'puntos_por_nivel';
 
-  -- subir de nivel las veces que corresponda
-  loop
     update character
-      set nivel = nivel + 1,
-          puntos_libres = puntos_libres + v_puntos_por_nivel
-      where id = new.character_id
-        and xp_total >= xp_requerida_para_nivel(nivel + 1);
-    if not found then
-      exit;
-    end if;
-  end loop;
+      set xp_total = xp_total + v_delta
+      where id = new.character_id;
+
+    -- subir de nivel las veces que corresponda
+    loop
+      update character
+        set nivel = nivel + 1,
+            puntos_libres = puntos_libres + v_puntos_por_nivel
+        where id = new.character_id
+          and xp_total >= xp_requerida_para_nivel(nivel + 1);
+      if not found then
+        exit;
+      end if;
+    end loop;
+  end if;
 
   return new;
 end;
 $$;
 
 create trigger trg_aplicar_health_event
-  before insert on health_events
+  before insert or update of valor on health_events
   for each row
   execute function fn_aplicar_health_event();
 

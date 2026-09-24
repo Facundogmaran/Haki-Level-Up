@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
   const { data, error } = await supabase
     .from("health_events")
-    .upsert(filas, { onConflict: "character_id,tipo,external_id", ignoreDuplicates: true })
+    .upsert(filas, { onConflict: "character_id,tipo,external_id" })
     .select("id");
 
   if (error) {
