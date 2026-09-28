@@ -64,6 +64,22 @@ export function rutaCuerpo(skinTone, bodyType) {
   return `/avatar/body/${skinTone}/${bodyType}.png`
 }
 
+// Cara (neutral), nariz (button) y orejas (default/medium): únicas
+// opciones disponibles por ahora, siempre puestas, tintadas según el
+// tono de piel elegido.
+export function rutaCara(skinTone, bodyType) {
+  const genero = bodyType === 'female' ? 'female' : 'male'
+  return `/avatar/face/${skinTone}/${genero}.png`
+}
+
+export function rutaNariz(skinTone) {
+  return `/avatar/nose/${skinTone}/button.png`
+}
+
+export function rutaOrejas(skinTone) {
+  return `/avatar/ears/${skinTone}/medium.png`
+}
+
 export function rutaPelo(hairStyle, hairColor) {
   return hairStyle ? `/avatar/hair/${hairColor}/${hairStyle}.png` : null
 }
