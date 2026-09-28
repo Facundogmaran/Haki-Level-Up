@@ -64,7 +64,7 @@ export function rutaCuerpo(skinTone, bodyType) {
   return `/avatar/body/${skinTone}/${bodyType}.png`
 }
 
-// Cara (neutral), nariz (button) y orejas (default/medium): únicas
+// Cara (neutral), nariz (button) y orejas (big): únicas
 // opciones disponibles por ahora, siempre puestas, tintadas según el
 // tono de piel elegido.
 export function rutaCara(skinTone, bodyType) {
@@ -77,7 +77,7 @@ export function rutaNariz(skinTone) {
 }
 
 export function rutaOrejas(skinTone) {
-  return `/avatar/ears/${skinTone}/medium.png`
+  return `/avatar/ears/${skinTone}/big.png`
 }
 
 export function rutaPelo(hairStyle, hairColor) {
@@ -86,4 +86,33 @@ export function rutaPelo(hairStyle, hairColor) {
 
 export function rutaVelloFacial(facialHairStyle, hairColor) {
   return facialHairStyle ? `/avatar/facial/${hairColor}/${facialHairStyle}.png` : null
+}
+
+// Variantes "walk": misma apariencia pero como hoja de animación de
+// caminata LPC (9 frames x 4 direcciones — arriba/izquierda/abajo/derecha),
+// generadas offline recoloreando los sprites base de Liberated Pixel Cup
+// con la misma paleta que las capas estáticas de arriba.
+export function rutaCuerpoWalk(skinTone, bodyType) {
+  return `/avatar-walk/body/${skinTone}/${bodyType}.png`
+}
+
+export function rutaCaraWalk(skinTone, bodyType) {
+  const genero = bodyType === 'female' ? 'female' : 'male'
+  return `/avatar-walk/face/${skinTone}/${genero}.png`
+}
+
+export function rutaNarizWalk(skinTone) {
+  return `/avatar-walk/nose/${skinTone}/button.png`
+}
+
+export function rutaOrejasWalk(skinTone) {
+  return `/avatar-walk/ears/${skinTone}/big.png`
+}
+
+export function rutaPeloWalk(hairStyle, hairColor) {
+  return hairStyle ? `/avatar-walk/hair/${hairColor}/${hairStyle}.png` : null
+}
+
+export function rutaVelloFacialWalk(facialHairStyle, hairColor) {
+  return facialHairStyle ? `/avatar-walk/facial/${hairColor}/${facialHairStyle}.png` : null
 }

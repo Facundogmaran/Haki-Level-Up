@@ -302,6 +302,33 @@ button.activo {
   image-rendering: pixelated;
 }
 
+.avatar-lienzo-animado {
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.avatar-lienzo-animado:active {
+  cursor: grabbing;
+}
+
+.avatar-capa-animada {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+  background-size: 900% 400%;
+  animation: avatar-caminar 0.9s steps(9) infinite;
+  pointer-events: none;
+}
+
+@keyframes avatar-caminar {
+  from { background-position-x: 0%; }
+  to { background-position-x: 100%; }
+}
+
 .encabezado-personaje .fila-stats-top {
   justify-content: center;
   gap: 24px;

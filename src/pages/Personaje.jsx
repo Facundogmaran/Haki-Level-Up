@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Avatar from '../components/Avatar'
+import AvatarAnimado from '../components/AvatarAnimado'
 import { ATRIBUTOS, asignarPunto, getCharacter, getInventory, xpRequeridaParaNivel } from '../lib/game'
 
 const NOMBRES = {
@@ -67,7 +67,7 @@ export default function Personaje() {
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
         <div className="avatar-contenedor">
-          <Avatar apariencia={personaje.apariencia} />
+          <AvatarAnimado apariencia={personaje.apariencia} />
         </div>
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
