@@ -51,31 +51,36 @@ export default function Mapa() {
     setLuchando(false)
   }
 
-  const raices = zonas.filter((z) => !z.zona_padre_id)
-  const hijasDe = (id) => zonas.filter((z) => z.zona_padre_id === id)
+  function aplanarZonas() {
+    const hijasDe = (id) => zonas.filter((z) => z.zona_padre_id === id)
+    const resultado = []
+    function recorrer(zona, profundidad) {
+      resultado.push({ zona, profundidad })
+      hijasDe(zona.id).forEach((h) => recorrer(h, profundidad + 1))
+    }
+    zonas.filter((z) => !z.zona_padre_id).forEach((z) => recorrer(z, 0))
+    return resultado
+  }
 
-  function renderZona(zona, profundidad = 0) {
+  function renderZona({ zona, profundidad }) {
     const preview = previews[zona.id]
     const porDebajoDeLoRecomendado = nivel < zona.requisito_nivel
     return (
-      <div key={zona.id} style={{ marginLeft: profundidad * 16 }}>
-        <div className={`tarjeta zona ${porDebajoDeLoRecomendado ? 'zona-riesgosa' : ''}`}>
-          <div>
-            <strong>{zona.nombre}</strong>
-            <p className="detalle-item">
-              {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel recomendado {zona.requisito_nivel}
+      <div key={zona.id} style={{ marginLeft: profundidad * 16 }} className={`tarjeta zona ${porDebajoDeLoRecomendado ? 'zona-riesgosa' : ''}`}>
+        <div>
+          <strong>{zona.nombre}</strong>
+          <p className="detalle-item">
+            {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel recomendado {zona.requisito_nivel}
+          </p>
+          {preview && (
+            <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
+              Probabilidad de éxito: {formatearChance(preview.chance)}
             </p>
-            {preview && (
-              <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
-                Probabilidad de éxito: {formatearChance(preview.chance)}
-              </p>
-            )}
-          </div>
-          <button disabled={luchando} onClick={() => handleIntentar(zona)}>
-            Explorar
-          </button>
+          )}
         </div>
-        {hijasDe(zona.id).map((h) => renderZona(h, profundidad + 1))}
+        <button disabled={luchando} onClick={() => handleIntentar(zona)}>
+          Explorar
+        </button>
       </div>
     )
   }
@@ -109,7 +114,7 @@ export default function Mapa() {
         </div>
       )}
 
-      <div className="lista-items">{raices.map((z) => renderZona(z))}</div>
+      <div className="lista-items">{aplanarZonas().map((entrada) => renderZona(entrada))}</div>
     </div>
   )
 }
