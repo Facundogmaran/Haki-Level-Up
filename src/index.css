@@ -38,6 +38,7 @@ body {
 
 main {
   flex: 1;
+  padding-top: env(safe-area-inset-top);
   padding-bottom: 76px;
 }
 
