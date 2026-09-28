@@ -15,8 +15,9 @@ insert into game_config (clave, valor) values
   ('xp_base', 100),          -- XP requerida para nivel 2 = xp_base * 2^xp_exponente
   ('xp_exponente', 1.5),     -- curva de dificultad para subir de nivel
   ('puntos_por_nivel', 3),   -- puntos de atributo que otorga cada nivel
-  ('combate_chance_min', 0.05),
+  ('combate_chance_min', 0.005),
   ('combate_chance_max', 0.95),
+  ('combate_exponente', 7), -- qué tan rápido cae la chance cuando el enemigo supera tu poder
   ('chance_perder_item_al_fallar', 0.12), -- probabilidad de perder un ítem equipado al fallar un encuentro
   -- Fórmulas de XP de Entrenamiento (todas con rendimiento decreciente:
   -- exponente < 1). Ver función calcular_xp_entrenamiento más abajo.
@@ -523,6 +524,7 @@ declare
   v_chance numeric;
   v_chance_min numeric;
   v_chance_max numeric;
+  v_exponente numeric;
 begin
   select * into v_zona from zones where id = p_zone_id;
   if v_zona.id is null then
@@ -540,12 +542,18 @@ begin
   select fuerza + resistencia + agilidad + vitalidad + mente + v_bonus_equipo
     into v_poder_personaje
     from character where id = p_character_id;
+  v_poder_personaje := greatest(0.1, v_poder_personaje);
 
   select valor into v_chance_min from game_config where clave = 'combate_chance_min';
   select valor into v_chance_max from game_config where clave = 'combate_chance_max';
+  select valor into v_exponente from game_config where clave = 'combate_exponente';
 
+  -- Curva exponencial sobre el ratio de poder: una diferencia grande
+  -- contra el enemigo castiga la chance mucho más fuerte que una
+  -- diferencia chica (en vez de la proporción lineal anterior), para
+  -- que zonas muy por encima del nivel recomendado sean casi imposibles.
   v_chance := greatest(v_chance_min, least(v_chance_max,
-    v_poder_personaje / (v_poder_personaje + v_enemigo.poder)));
+    power(v_poder_personaje / v_enemigo.poder, v_exponente)));
 
   return jsonb_build_object(
     'chance', v_chance,
