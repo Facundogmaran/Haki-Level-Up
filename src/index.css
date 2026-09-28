@@ -182,8 +182,8 @@ button.activo {
   font-style: italic;
 }
 
-.zona-bloqueada {
-  opacity: 0.5;
+.zona-riesgosa {
+  border-color: var(--fallo);
 }
 
 .chance-exito {
@@ -191,6 +191,10 @@ button.activo {
   font-size: 0.78rem;
   color: var(--exito);
   font-weight: 600;
+}
+
+.chance-exito.chance-baja {
+  color: var(--fallo);
 }
 
 .resultado-encuentro {

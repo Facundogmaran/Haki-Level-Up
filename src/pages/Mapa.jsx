@@ -16,9 +16,8 @@ export default function Mapa() {
       setZonas(z)
       setNivel(personaje.nivel)
 
-      const desbloqueadas = z.filter((zona) => personaje.nivel >= zona.requisito_nivel)
       const entries = await Promise.all(
-        desbloqueadas.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
+        z.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
       )
       setPreviews(Object.fromEntries(entries))
     } catch (e) {
@@ -49,22 +48,24 @@ export default function Mapa() {
   const hijasDe = (id) => zonas.filter((z) => z.zona_padre_id === id)
 
   function renderZona(zona, profundidad = 0) {
-    const desbloqueada = nivel >= zona.requisito_nivel
     const preview = previews[zona.id]
+    const porDebajoDeLoRecomendado = nivel < zona.requisito_nivel
     return (
       <div key={zona.id} style={{ marginLeft: profundidad * 16 }}>
-        <div className={`tarjeta zona ${desbloqueada ? '' : 'zona-bloqueada'}`}>
+        <div className={`tarjeta zona ${porDebajoDeLoRecomendado ? 'zona-riesgosa' : ''}`}>
           <div>
             <strong>{zona.nombre}</strong>
             <p className="detalle-item">
-              {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel mínimo {zona.requisito_nivel}
+              {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel recomendado {zona.requisito_nivel}
             </p>
-            {desbloqueada && preview && (
-              <p className="chance-exito">Probabilidad de éxito: {Math.round(preview.chance * 100)}%</p>
+            {preview && (
+              <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
+                Probabilidad de éxito: {Math.round(preview.chance * 100)}%
+              </p>
             )}
           </div>
-          <button disabled={!desbloqueada || luchando} onClick={() => handleIntentar(zona)}>
-            {desbloqueada ? 'Explorar' : `Nivel ${zona.requisito_nivel}`}
+          <button disabled={luchando} onClick={() => handleIntentar(zona)}>
+            Explorar
           </button>
         </div>
         {hijasDe(zona.id).map((h) => renderZona(h, profundidad + 1))}

@@ -618,10 +618,9 @@ begin
     raise exception 'zona no encontrada';
   end if;
 
-  if v_character.nivel < v_zona.requisito_nivel then
-    raise exception 'nivel insuficiente para esta zona';
-  end if;
-
+  -- requisito_nivel es solo una recomendación visual: se puede intentar
+  -- cualquier zona a cualquier nivel, la chance ya queda baja sola si
+  -- el personaje está por debajo de lo recomendado.
   select * into v_enemigo from enemies where id = v_zona.enemigo_id;
 
   v_calc := calcular_chance_encuentro(v_character.id, p_zone_id);
