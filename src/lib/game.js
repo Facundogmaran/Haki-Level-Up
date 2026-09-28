@@ -67,6 +67,12 @@ export async function intentarEncuentro(zoneId) {
   return data
 }
 
+export async function previsualizarEncuentro(zoneId) {
+  const { data, error } = await supabase.rpc('previsualizar_encuentro', { p_zone_id: zoneId })
+  if (error) throw error
+  return data
+}
+
 export async function getHistorial(limit = 20) {
   const { data, error } = await supabase
     .from('encounter_log')

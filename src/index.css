@@ -186,6 +186,13 @@ button.activo {
   opacity: 0.5;
 }
 
+.chance-exito {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--exito);
+  font-weight: 600;
+}
+
 .resultado-encuentro {
   display: flex;
   flex-direction: column;

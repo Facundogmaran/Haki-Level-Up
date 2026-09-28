@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { getCharacter, getZones, intentarEncuentro } from '../lib/game'
+import { getCharacter, getZones, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
 
 export default function Mapa() {
   const [zonas, setZonas] = useState([])
   const [nivel, setNivel] = useState(1)
+  const [previews, setPreviews] = useState({})
   const [error, setError] = useState('')
   const [resultado, setResultado] = useState(null)
   const [zonaActiva, setZonaActiva] = useState(null)
@@ -14,6 +15,12 @@ export default function Mapa() {
       const [z, personaje] = await Promise.all([getZones(), getCharacter()])
       setZonas(z)
       setNivel(personaje.nivel)
+
+      const desbloqueadas = z.filter((zona) => personaje.nivel >= zona.requisito_nivel)
+      const entries = await Promise.all(
+        desbloqueadas.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
+      )
+      setPreviews(Object.fromEntries(entries))
     } catch (e) {
       setError(e.message)
     }
@@ -31,7 +38,7 @@ export default function Mapa() {
     try {
       const r = await intentarEncuentro(zona.id)
       setResultado(r)
-      if (r.gano) await cargar()
+      await cargar()
     } catch (e) {
       setError(e.message)
     }
@@ -43,6 +50,7 @@ export default function Mapa() {
 
   function renderZona(zona, profundidad = 0) {
     const desbloqueada = nivel >= zona.requisito_nivel
+    const preview = previews[zona.id]
     return (
       <div key={zona.id} style={{ marginLeft: profundidad * 16 }}>
         <div className={`tarjeta zona ${desbloqueada ? '' : 'zona-bloqueada'}`}>
@@ -51,6 +59,9 @@ export default function Mapa() {
             <p className="detalle-item">
               {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel mínimo {zona.requisito_nivel}
             </p>
+            {desbloqueada && preview && (
+              <p className="chance-exito">Probabilidad de éxito: {Math.round(preview.chance * 100)}%</p>
+            )}
           </div>
           <button disabled={!desbloqueada || luchando} onClick={() => handleIntentar(zona)}>
             {desbloqueada ? 'Explorar' : `Nivel ${zona.requisito_nivel}`}
@@ -76,7 +87,15 @@ export default function Mapa() {
               </p>
               <p className="detalle-item">Probabilidad de éxito: {Math.round(resultado.chance * 100)}%</p>
               {resultado.gano && <p className="detalle-item">Ganaste 🪙 {resultado.oro_ganado}</p>}
-              {resultado.item_ganado_id && <p className="detalle-item">¡También encontraste un objeto! Revisalo en la Tienda &gt; Inventario.</p>}
+              {resultado.gano && resultado.item_ganado_id && (
+                <p className="detalle-item">¡También encontraste un objeto! Revisalo en la Tienda &gt; Inventario.</p>
+              )}
+              {!resultado.gano && resultado.oro_perdido > 0 && (
+                <p className="detalle-item fallo">Perdiste 🪙 {resultado.oro_perdido} en la huida.</p>
+              )}
+              {!resultado.gano && resultado.item_perdido_nombre && (
+                <p className="detalle-item fallo">¡Perdiste {resultado.item_perdido_nombre} en el combate!</p>
+              )}
             </>
           )}
         </div>
