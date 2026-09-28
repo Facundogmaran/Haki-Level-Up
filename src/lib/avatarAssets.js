@@ -60,26 +60,6 @@ export const APARIENCIA_POR_DEFECTO = {
   facialHairStyle: null,
 }
 
-export function rutaCuerpo(skinTone, bodyType) {
-  return `/avatar/body/${skinTone}/${bodyType}.png`
-}
-
-// Cara (neutral), nariz (button) y orejas (big): únicas
-// opciones disponibles por ahora, siempre puestas, tintadas según el
-// tono de piel elegido.
-export function rutaCara(skinTone, bodyType) {
-  const genero = bodyType === 'female' ? 'female' : 'male'
-  return `/avatar/face/${skinTone}/${genero}.png`
-}
-
-export function rutaNariz(skinTone) {
-  return `/avatar/nose/${skinTone}/button.png`
-}
-
-export function rutaOrejas(skinTone) {
-  return `/avatar/ears/${skinTone}/big.png`
-}
-
 export function rutaPelo(hairStyle, hairColor) {
   return hairStyle ? `/avatar/hair/${hairColor}/${hairStyle}.png` : null
 }
@@ -94,6 +74,15 @@ export function rutaVelloFacial(facialHairStyle, hairColor) {
 // con la misma paleta que las capas estáticas de arriba.
 export function rutaCuerpoWalk(skinTone, bodyType) {
   return `/avatar-walk/body/${skinTone}/${bodyType}.png`
+}
+
+// Forma de la cabeza (cráneo, frente, sienes) sobre la que se apoyan el
+// pelo, las orejas y la cara -- sin esta capa la "cabeza" es solo el
+// parche de ojos de rutaCaraWalk flotando sobre el cuello, por eso los
+// peinados cortos dejaban un hueco.
+export function rutaCabezaWalk(skinTone, bodyType) {
+  const genero = bodyType === 'female' ? 'female' : 'male'
+  return `/avatar-walk/head/${skinTone}/${genero}.png`
 }
 
 export function rutaCaraWalk(skinTone, bodyType) {

@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   APARIENCIA_POR_DEFECTO,
+  rutaCabezaWalk,
   rutaCaraWalk,
   rutaCuerpoWalk,
   rutaOrejasWalk,
@@ -79,6 +80,7 @@ export default function AvatarAnimado({ apariencia }) {
 
   const capas = [
     { src: rutaCuerpoWalk(a.skinTone, a.bodyType), key: 'cuerpo' },
+    { src: rutaCabezaWalk(a.skinTone, a.bodyType), key: 'cabeza' },
     { src: rutaCaraWalk(a.skinTone, a.bodyType), key: 'cara' },
     { src: rutaNarizWalk(a.skinTone), key: 'nariz' },
     { src: rutaVelloFacialWalk(a.facialHairStyle, a.hairColor), key: 'vello' },
