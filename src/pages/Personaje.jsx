@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
-import { ATRIBUTOS, asignarPunto, getCharacter, getInventory, xpRequeridaParaNivel } from '../lib/game'
+import {
+  ATRIBUTOS,
+  asignarPunto,
+  getCharacter,
+  getInventory,
+  sumarBonusEquipo,
+  xpRequeridaParaNivel,
+} from '../lib/game'
 
 const NOMBRES = {
   fuerza: 'Fuerza',
@@ -56,6 +63,7 @@ export default function Personaje() {
   if (error) return <p className="error">{error}</p>
   if (!personaje) return <p>Cargando personaje...</p>
 
+  const bonusEquipo = sumarBonusEquipo(equipado)
   const xpNivelActual = xpRequeridaParaNivel(personaje.nivel)
   const xpNivelSiguiente = xpRequeridaParaNivel(personaje.nivel + 1)
   const progreso = Math.min(
@@ -92,17 +100,29 @@ export default function Personaje() {
       <div className="tarjeta">
         <h3>Atributos</h3>
         <div className="lista-atributos">
-          {ATRIBUTOS.map((atributo) => (
-            <div key={atributo} className="fila-atributo">
-              <span className="nombre-atributo">{NOMBRES[atributo]}</span>
-              <span className="valor-atributo">{personaje[atributo]}</span>
-              {personaje.puntos_libres > 0 && (
-                <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
-                  +
-                </button>
-              )}
-            </div>
-          ))}
+          {ATRIBUTOS.map((atributo) => {
+            const bonus = bonusEquipo[atributo]
+            return (
+              <div key={atributo} className="fila-atributo">
+                <span className="nombre-atributo">{NOMBRES[atributo]}</span>
+                <span className="valor-atributo">
+                  {personaje[atributo] + bonus}
+                  {bonus !== 0 && (
+                    <span className={`valor-atributo-bonus${bonus < 0 ? ' negativo' : ''}`}>
+                      {' '}
+                      ({bonus > 0 ? '+' : ''}
+                      {bonus})
+                    </span>
+                  )}
+                </span>
+                {personaje.puntos_libres > 0 && (
+                  <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
+                    +
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 

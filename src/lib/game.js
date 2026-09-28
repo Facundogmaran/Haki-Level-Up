@@ -12,6 +12,20 @@ export function xpRequeridaParaNivel(nivel, xpBase = 100, xpExponente = 1.5) {
   return xpBase * Math.pow(Math.max(0, nivel - 1), xpExponente)
 }
 
+// Suma los bonus de atributo (jsonb en equipment_catalog, ej. {"fuerza": 2})
+// de una lista de ítems de inventario equipados. El resultado se suma al
+// atributo base del personaje para mostrar el valor efectivo — la misma
+// cuenta que ya usa calcular_chance_encuentro() del lado del servidor.
+export function sumarBonusEquipo(itemsEquipados) {
+  const total = Object.fromEntries(ATRIBUTOS.map((a) => [a, 0]))
+  for (const inv of itemsEquipados) {
+    for (const [atributo, valor] of Object.entries(inv.item?.bonus ?? {})) {
+      if (atributo in total) total[atributo] += valor
+    }
+  }
+  return total
+}
+
 export async function asignarPunto(atributo) {
   const { error } = await supabase.rpc('asignar_punto', { p_atributo: atributo })
   if (error) throw error

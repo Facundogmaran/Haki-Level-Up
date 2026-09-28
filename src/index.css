@@ -126,6 +126,16 @@ main {
   font-size: 1.1rem;
 }
 
+.valor-atributo-bonus {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--exito);
+}
+
+.valor-atributo-bonus.negativo {
+  color: var(--fallo);
+}
+
 button {
   background: var(--superficie-2);
   border: 1px solid var(--borde);
