@@ -430,9 +430,18 @@ insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) va
   ('Camino del Bandido', (select id from zones where nombre = 'Bosque Lindero'), 1, (select id from enemies where nombre = 'Bandido del camino'), 2),
   ('Espesura del Lobo',  (select id from zones where nombre = 'Bosque Lindero'), 2, (select id from enemies where nombre = 'Lobo del bosque'), 3);
 
+-- Estas van en inserts SEPARADOS (no en el mismo statement multi-fila):
+-- las subconsultas de un insert multi-fila se resuelven todas contra el
+-- estado ANTES del statement, así que una fila no puede referenciar a
+-- su hermana insertada en la misma sentencia (eso rompió esta cadena
+-- la primera vez: Guarida y Fortaleza quedaban sin padre).
 insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
-  ('Campamento Orco', (select id from zones where nombre = 'Espesura del Lobo'), 1, (select id from enemies where nombre = 'Orco explorador'), 5),
-  ('Guarida Orca',    (select id from zones where nombre = 'Campamento Orco'), 1, (select id from enemies where nombre = 'Orco guerrero'), 8),
+  ('Campamento Orco', (select id from zones where nombre = 'Espesura del Lobo'), 1, (select id from enemies where nombre = 'Orco explorador'), 5);
+
+insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
+  ('Guarida Orca', (select id from zones where nombre = 'Campamento Orco'), 1, (select id from enemies where nombre = 'Orco guerrero'), 8);
+
+insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
   ('Fortaleza del Capitán', (select id from zones where nombre = 'Guarida Orca'), 1, (select id from enemies where nombre = 'Capitán orco'), 12);
 
 -- ============================================================
