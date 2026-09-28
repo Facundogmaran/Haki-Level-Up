@@ -262,30 +262,43 @@ button.activo {
   font-size: 1rem;
 }
 
-/* ---- Personaje: insignia de nivel + equipamiento ---- */
+/* ---- Personaje: avatar + equipamiento ---- */
 
 .encabezado-personaje {
   text-align: center;
   position: relative;
 }
 
-.insignia-nivel {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 8px;
-  border-radius: 50%;
-  background: linear-gradient(160deg, #7c5cff, #4b2fbf);
-  border: 2px solid var(--oro);
+.avatar-contenedor {
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  font-weight: 800;
+  padding: 4px 0 8px;
+}
+
+.avatar-svg {
+  width: 160px;
+  height: 100%;
 }
 
 .encabezado-personaje .fila-stats-top {
   justify-content: center;
   gap: 24px;
+}
+
+.boton-editar-personaje {
+  margin-top: 10px;
+}
+
+.fila-opciones-rasgo {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.fila-opciones-rasgo button {
+  min-width: 44px;
+  text-transform: uppercase;
 }
 
 .fila-equipamiento {

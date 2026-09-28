@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import Avatar from '../components/Avatar'
 import { ATRIBUTOS, asignarPunto, getCharacter, getInventory, xpRequeridaParaNivel } from '../lib/game'
 
 const NOMBRES = {
@@ -19,6 +21,7 @@ const ICONOS_SLOT = {
 }
 
 export default function Personaje() {
+  const navigate = useNavigate()
   const [personaje, setPersonaje] = useState(null)
   const [equipado, setEquipado] = useState([])
   const [error, setError] = useState('')
@@ -60,10 +63,14 @@ export default function Personaje() {
     ((personaje.xp_total - xpNivelActual) / (xpNivelSiguiente - xpNivelActual)) * 100,
   )
 
+  const equipadoParaAvatar = equipado.map((i) => ({ slot: i.item.slot, color: i.item.color }))
+
   return (
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
-        <div className="insignia-nivel">{personaje.nivel}</div>
+        <div className="avatar-contenedor">
+          <Avatar apariencia={personaje.apariencia} equipado={equipadoParaAvatar} />
+        </div>
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
           <span>Nivel {personaje.nivel}</span>
@@ -75,6 +82,9 @@ export default function Personaje() {
         <p className="detalle-xp">
           {Math.round(personaje.xp_total)} XP · próximo nivel en {Math.max(0, Math.round(xpNivelSiguiente - personaje.xp_total))} XP
         </p>
+        <button className="boton-editar-personaje" onClick={() => navigate('/personaje/editar')}>
+          Editar personaje
+        </button>
       </div>
 
       {personaje.puntos_libres > 0 && (
