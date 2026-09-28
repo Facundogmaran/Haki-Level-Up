@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import { getCharacter, getZones, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
 
+function formatearChance(chance) {
+  const pct = chance * 100
+  if (pct < 1) return `${pct.toFixed(2)}%`
+  if (pct < 10) return `${pct.toFixed(1)}%`
+  return `${Math.round(pct)}%`
+}
+
 export default function Mapa() {
   const [zonas, setZonas] = useState([])
   const [nivel, setNivel] = useState(1)
@@ -60,7 +67,7 @@ export default function Mapa() {
             </p>
             {preview && (
               <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
-                Probabilidad de éxito: {Math.round(preview.chance * 100)}%
+                Probabilidad de éxito: {formatearChance(preview.chance)}
               </p>
             )}
           </div>
@@ -86,7 +93,7 @@ export default function Mapa() {
               <p className={resultado.gano ? 'exito' : 'fallo'}>
                 {resultado.gano ? `¡Venciste a ${resultado.enemigo}!` : `${resultado.enemigo} fue demasiado. No esta vez.`}
               </p>
-              <p className="detalle-item">Probabilidad de éxito: {Math.round(resultado.chance * 100)}%</p>
+              <p className="detalle-item">Probabilidad de éxito: {formatearChance(resultado.chance)}</p>
               {resultado.gano && <p className="detalle-item">Ganaste 🪙 {resultado.oro_ganado}</p>}
               {resultado.gano && resultado.item_ganado_id && (
                 <p className="detalle-item">¡También encontraste un objeto! Revisalo en la Tienda &gt; Inventario.</p>
