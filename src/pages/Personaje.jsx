@@ -63,13 +63,11 @@ export default function Personaje() {
     ((personaje.xp_total - xpNivelActual) / (xpNivelSiguiente - xpNivelActual)) * 100,
   )
 
-  const equipadoParaAvatar = equipado.map((i) => ({ slot: i.item.slot, color: i.item.color }))
-
   return (
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
         <div className="avatar-contenedor">
-          <Avatar apariencia={personaje.apariencia} equipado={equipadoParaAvatar} />
+          <Avatar apariencia={personaje.apariencia} />
         </div>
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
