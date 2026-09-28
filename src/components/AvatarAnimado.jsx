@@ -23,13 +23,15 @@ function CapaAnimada({ src, direccion }) {
   if (!src) return null
   const fila = FILA_DIRECCION[direccion]
   return (
-    <div
-      className="avatar-capa-animada"
-      style={{
-        backgroundImage: `url(${src})`,
-        backgroundPositionY: `${(fila / 3) * 100}%`,
-      }}
-    />
+    <div className="avatar-capa-viewport">
+      <div
+        className="avatar-capa-hoja"
+        style={{
+          backgroundImage: `url(${src})`,
+          translate: `0% ${fila * -25}%`,
+        }}
+      />
+    </div>
   )
 }
 

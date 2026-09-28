@@ -312,21 +312,37 @@ button.activo {
   cursor: grabbing;
 }
 
-.avatar-capa-animada {
+/* Ventana que recorta a un solo frame (64x64) de la hoja de animación. */
+.avatar-capa-viewport {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  image-rendering: pixelated;
-  background-repeat: no-repeat;
-  background-size: 900% 400%;
-  animation: avatar-caminar 0.9s steps(9) infinite;
+  overflow: hidden;
   pointer-events: none;
 }
 
+/* La hoja completa (9 frames x 4 direcciones). La dirección se fija con
+   la propiedad `translate` (estática, por React); el ciclo de caminata
+   anima `transform` por separado -- se componen sin pisarse. Usamos
+   transform en vez de background-position porque animar
+   background-position con steps() no siempre "salta" limpio entre
+   frames en todos los navegadores (se vieron mezclas de dos frames). */
+.avatar-capa-hoja {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 900%;
+  height: 400%;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  animation: avatar-caminar 0.9s steps(9) infinite;
+}
+
 @keyframes avatar-caminar {
-  from { background-position-x: 0%; }
-  to { background-position-x: 100%; }
+  from { transform: translateX(0%); }
+  to { transform: translateX(-88.8889%); }
 }
 
 .encabezado-personaje .fila-stats-top {
