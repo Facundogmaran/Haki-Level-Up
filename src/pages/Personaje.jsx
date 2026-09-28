@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ATRIBUTOS, asignarPunto, getCharacter, xpRequeridaParaNivel } from '../lib/game'
+import { ATRIBUTOS, asignarPunto, getCharacter, getInventory, xpRequeridaParaNivel } from '../lib/game'
 
 const NOMBRES = {
   fuerza: 'Fuerza',
@@ -9,15 +9,26 @@ const NOMBRES = {
   mente: 'Mente',
 }
 
+const ICONOS_SLOT = {
+  cabeza: '🎩',
+  torso: '👕',
+  arma: '⚔️',
+  piernas: '👖',
+  pies: '👟',
+  accesorio: '💍',
+}
+
 export default function Personaje() {
   const [personaje, setPersonaje] = useState(null)
+  const [equipado, setEquipado] = useState([])
   const [error, setError] = useState('')
   const [asignando, setAsignando] = useState(false)
 
   async function cargar() {
     try {
-      const data = await getCharacter()
+      const [data, inventario] = await Promise.all([getCharacter(), getInventory()])
       setPersonaje(data)
+      setEquipado(inventario.filter((i) => i.equipado))
     } catch (e) {
       setError(e.message)
     }
@@ -52,6 +63,7 @@ export default function Personaje() {
   return (
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
+        <div className="insignia-nivel">{personaje.nivel}</div>
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
           <span>Nivel {personaje.nivel}</span>
@@ -81,6 +93,19 @@ export default function Personaje() {
                   +
                 </button>
               )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="tarjeta">
+        <h3>Equipamiento</h3>
+        {equipado.length === 0 && <p className="detalle-item">Nada equipado todavía — visitá la Tienda.</p>}
+        <div className="fila-equipamiento">
+          {equipado.map((i) => (
+            <div key={i.id} className="chip-equipamiento" title={i.item.nombre}>
+              <span className="chip-equipamiento-icono">{ICONOS_SLOT[i.item.slot] ?? '❔'}</span>
+              <span className="chip-equipamiento-nombre">{i.item.nombre}</span>
             </div>
           ))}
         </div>

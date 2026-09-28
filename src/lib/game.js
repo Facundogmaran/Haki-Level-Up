@@ -71,3 +71,56 @@ export async function getHistorial(limit = 20) {
   if (error) throw error
   return data
 }
+
+export async function getMuscleGroups() {
+  const { data, error } = await supabase.from('muscle_groups').select('*').order('nombre')
+  if (error) throw error
+  return data
+}
+
+export async function getExercises(muscleGroupId) {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .eq('muscle_group_id', muscleGroupId)
+    .order('nombre')
+  if (error) throw error
+  return data
+}
+
+export async function getUltimoRegistroEjercicio(exerciseId) {
+  const { data, error } = await supabase
+    .from('workout_exercises')
+    .select('peso_kg, repeticiones, workout:workouts(fecha)')
+    .eq('exercise_id', exerciseId)
+    .order('id', { ascending: false })
+    .limit(1)
+  if (error) throw error
+  return data?.[0] ?? null
+}
+
+export async function registrarEntrenamiento(workout) {
+  const { data, error } = await supabase.rpc('registrar_entrenamiento', { p_workout: workout })
+  if (error) throw error
+  return data
+}
+
+export async function getWorkoutsPorFecha(fecha) {
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('*, ejercicios:workout_exercises(peso_kg, repeticiones, exercise:exercises(nombre, muscle_group_id))')
+    .eq('fecha', fecha)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function getDiasConEntrenamientoDelMes(desde, hasta) {
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('fecha')
+    .gte('fecha', desde)
+    .lte('fecha', hasta)
+  if (error) throw error
+  return [...new Set(data.map((w) => w.fecha))]
+}

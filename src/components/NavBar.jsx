@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 
 const LINKS = [
   { to: '/', label: 'Personaje', end: true },
+  { to: '/entrenamiento', label: 'Entrenamiento' },
   { to: '/tienda', label: 'Tienda' },
   { to: '/mapa', label: 'Mapa' },
 ]
