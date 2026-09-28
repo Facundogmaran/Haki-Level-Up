@@ -20,8 +20,8 @@ function resumenWorkout(w) {
   if (w.tipo === 'cardio' && w.subtipo === 'caminata') return `${w.pasos} pasos`
   if (w.tipo === 'cardio') return `${w.distancia_km} km · ${w.duracion_min} min · ${w.velocidad_media_kmh} km/h`
   if (w.tipo === 'fuerza') {
-    const musculos = [...new Set(w.ejercicios.map((e) => e.exercise?.nombre))].join(', ')
-    return `${w.duracion_min} min · ${musculos}`
+    const ejercicios = [...new Set(w.ejercicios.map((e) => e.exercise?.nombre))].join(', ')
+    return `${w.duracion_min} min · ${ejercicios}`
   }
   if (w.tipo === 'calorias') return `${w.kcal} kcal`
   return ''
@@ -45,6 +45,8 @@ export default function Entrenamiento() {
   const [ejerciciosAgregados, setEjerciciosAgregados] = useState([])
   const [duracionFuerza, setDuracionFuerza] = useState('')
 
+  const [workoutAbierto, setWorkoutAbierto] = useState(null)
+
   const [resultado, setResultado] = useState(null)
   const [workoutGuardado, setWorkoutGuardado] = useState(null)
 
@@ -59,6 +61,7 @@ export default function Entrenamiento() {
 
   useEffect(() => {
     cargarDia(fecha)
+    setWorkoutAbierto(null)
   }, [fecha])
 
   async function handleCambiarMes(year, month) {
@@ -210,15 +213,61 @@ export default function Entrenamiento() {
 
           <div className="lista-items">
             {workouts.length === 0 && <p className="detalle-item">Sin entrenamientos este día.</p>}
-            {workouts.map((w) => (
-              <div key={w.id} className="tarjeta item-catalogo">
-                <div>
-                  <strong>{ICONOS_HISTORIAL[w.subtipo] ?? ICONOS_HISTORIAL[w.tipo]} {w.tipo === 'cardio' ? w.subtipo : w.tipo}</strong>
-                  <p className="detalle-item">{resumenWorkout(w)}</p>
+            {workouts.map((w) => {
+              const abierto = workoutAbierto === w.id
+              return (
+                <div key={w.id} className="tarjeta workout-registrado">
+                  <button
+                    className="item-catalogo workout-registrado-header"
+                    onClick={() => setWorkoutAbierto(abierto ? null : w.id)}
+                  >
+                    <div>
+                      <strong>{ICONOS_HISTORIAL[w.subtipo] ?? ICONOS_HISTORIAL[w.tipo]} {w.tipo === 'cardio' ? w.subtipo : w.tipo}</strong>
+                      <p className="detalle-item">{resumenWorkout(w)}</p>
+                    </div>
+                    <span className="resultado-xp-chico">+{Math.round(w.xp_otorgada)} XP {abierto ? '▾' : '▸'}</span>
+                  </button>
+
+                  {abierto && (
+                    <div className="workout-registrado-detalle">
+                      {w.tipo === 'fuerza' ? (
+                        w.ejercicios.map((e, i) => (
+                          <div key={i} className="fila-atributo">
+                            <span className="nombre-atributo">{e.exercise?.nombre}</span>
+                            <span className="valor-atributo">{e.peso_kg} kg × {e.repeticiones}</span>
+                          </div>
+                        ))
+                      ) : w.tipo === 'cardio' && w.subtipo === 'caminata' ? (
+                        <div className="fila-atributo">
+                          <span className="nombre-atributo">Pasos</span>
+                          <span className="valor-atributo">{w.pasos}</span>
+                        </div>
+                      ) : w.tipo === 'cardio' ? (
+                        <>
+                          <div className="fila-atributo">
+                            <span className="nombre-atributo">Distancia</span>
+                            <span className="valor-atributo">{w.distancia_km} km</span>
+                          </div>
+                          <div className="fila-atributo">
+                            <span className="nombre-atributo">Tiempo</span>
+                            <span className="valor-atributo">{w.duracion_min} min</span>
+                          </div>
+                          <div className="fila-atributo">
+                            <span className="nombre-atributo">Velocidad media</span>
+                            <span className="valor-atributo">{w.velocidad_media_kmh} km/h</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="fila-atributo">
+                          <span className="nombre-atributo">Calorías</span>
+                          <span className="valor-atributo">{w.kcal} kcal</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span className="resultado-xp-chico">+{Math.round(w.xp_otorgada)} XP</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </>
       )}

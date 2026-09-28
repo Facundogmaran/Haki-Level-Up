@@ -425,6 +425,29 @@ button.activo {
   white-space: nowrap;
 }
 
+.workout-registrado {
+  padding: 0;
+  overflow: hidden;
+}
+
+.workout-registrado-header {
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.workout-registrado-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 14px;
+  border-top: 1px solid var(--borde);
+  padding-top: 10px;
+}
+
 /* ---- Overlay de resultado de entrenamiento ---- */
 
 .overlay {
