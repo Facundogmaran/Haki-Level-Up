@@ -17,7 +17,8 @@ insert into game_config (clave, valor) values
   ('puntos_por_nivel', 3),   -- puntos de atributo que otorga cada nivel
   ('combate_chance_min', 0.005),
   ('combate_chance_max', 0.95),
-  ('combate_exponente', 7), -- qué tan rápido cae la chance cuando el enemigo supera tu poder
+  ('combate_exponente_abajo', 7), -- qué tan rápido CAE la chance por debajo del 50% (estar en desventaja)
+  ('combate_exponente_arriba', 1), -- qué tan gradual SUBE la chance por encima del 50% (estar en ventaja)
   ('chance_perder_item_al_fallar', 0.12), -- probabilidad de perder un ítem equipado al fallar un encuentro
   -- Fórmulas de XP de Entrenamiento (todas con rendimiento decreciente:
   -- exponente < 1). Ver función calcular_xp_entrenamiento más abajo.
@@ -521,10 +522,12 @@ declare
   v_zona zones%rowtype;
   v_bonus_equipo numeric;
   v_poder_personaje numeric;
+  v_ratio numeric;
   v_chance numeric;
   v_chance_min numeric;
   v_chance_max numeric;
-  v_exponente numeric;
+  v_exp_abajo numeric;
+  v_exp_arriba numeric;
 begin
   select * into v_zona from zones where id = p_zone_id;
   if v_zona.id is null then
@@ -543,17 +546,26 @@ begin
     into v_poder_personaje
     from character where id = p_character_id;
   v_poder_personaje := greatest(0.1, v_poder_personaje);
+  v_ratio := v_poder_personaje / v_enemigo.poder;
 
   select valor into v_chance_min from game_config where clave = 'combate_chance_min';
   select valor into v_chance_max from game_config where clave = 'combate_chance_max';
-  select valor into v_exponente from game_config where clave = 'combate_exponente';
+  select valor into v_exp_abajo from game_config where clave = 'combate_exponente_abajo';
+  select valor into v_exp_arriba from game_config where clave = 'combate_exponente_arriba';
 
-  -- Curva exponencial sobre el ratio de poder: una diferencia grande
-  -- contra el enemigo castiga la chance mucho más fuerte que una
-  -- diferencia chica (en vez de la proporción lineal anterior), para
-  -- que zonas muy por encima del nivel recomendado sean casi imposibles.
-  v_chance := greatest(v_chance_min, least(v_chance_max,
-    power(v_poder_personaje / v_enemigo.poder, v_exponente)));
+  -- Curva partida en 50% cuando el poder empata con el enemigo:
+  -- por debajo, cae MUY rápido (exponente alto) para que una zona muy
+  -- por encima del nivel recomendado sea casi imposible; por arriba,
+  -- sube gradual y asintóticamente hacia el techo (nunca la satura de
+  -- golpe), para que ser el doble de fuerte no sea lo mismo que ser
+  -- diez veces más fuerte.
+  if v_ratio >= 1 then
+    v_chance := 0.5 + (v_chance_max - 0.5) * (1 - power(v_ratio, -v_exp_arriba));
+  else
+    v_chance := v_chance_min + (0.5 - v_chance_min) * power(v_ratio, v_exp_abajo);
+  end if;
+
+  v_chance := greatest(v_chance_min, least(v_chance_max, v_chance));
 
   return jsonb_build_object(
     'chance', v_chance,
