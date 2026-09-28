@@ -53,6 +53,7 @@ create table character (
   vitalidad int not null default 5,
   mente int not null default 5,
   puntos_libres int not null default 0,
+  apariencia jsonb not null default '{"fisico":"a","pelo":"1","ojos":"1","boca":"1"}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -101,7 +102,8 @@ create table equipment_catalog (
   slot text not null check (slot in ('cabeza','torso','arma','piernas','pies','accesorio')),
   bonus jsonb not null default '{}'::jsonb, -- ej: {"fuerza": 2, "vitalidad": 1}
   precio_oro numeric not null,
-  descripcion text
+  descripcion text,
+  color text not null default '#8b5e34' -- con qué color se dibuja la forma genérica del slot cuando está equipado
 );
 
 create table inventory (
@@ -390,22 +392,22 @@ create policy "propios ejercicios de entrenamiento" on workout_exercises
 -- ============================================================
 -- Seed: catálogo de equipamiento inicial (ajustable después)
 -- ============================================================
-insert into equipment_catalog (nombre, slot, bonus, precio_oro, descripcion) values
-  ('Casco de cuero',      'cabeza',    '{"vitalidad": 1}',                 20,  'Protección básica para la cabeza.'),
-  ('Yelmo de hierro',     'cabeza',    '{"vitalidad": 2, "resistencia": 1}', 60,  'Yelmo resistente forjado en hierro.'),
-  ('Corona del sabio',    'cabeza',    '{"mente": 3}',                      90,  'Otorga claridad mental.'),
-  ('Túnica de viaje',     'torso',     '{"agilidad": 1}',                   20,  'Liviana, ideal para moverse rápido.'),
-  ('Coraza de cuero',     'torso',     '{"resistencia": 2}',                55,  'Armadura ligera de cuero curtido.'),
-  ('Armadura de placas',  'torso',     '{"resistencia": 3, "vitalidad": 2}', 140, 'Pesada pero muy protectora.'),
-  ('Daga oxidada',        'arma',      '{"agilidad": 1}',                   15,  'Vieja pero filosa.'),
-  ('Espada corta',        'arma',      '{"fuerza": 2}',                     50,  'Espada equilibrada de acero.'),
-  ('Espadón de guerra',   'arma',      '{"fuerza": 4, "resistencia": -1}',  120, 'Golpea fuerte, cuesta manejarla.'),
-  ('Báculo arcano',       'arma',      '{"mente": 3}',                      110, 'Canaliza energía mental en combate.'),
-  ('Grebas de cuero',     'piernas',   '{"agilidad": 1, "resistencia": 1}',  35,  'Protección liviana para las piernas.'),
-  ('Botas del viajero',   'pies',      '{"agilidad": 2}',                   40,  'Botas cómodas para largas caminatas.'),
-  ('Botas de hierro',     'pies',      '{"resistencia": 1, "vitalidad": 1}', 45,  'Pesadas pero firmes.'),
-  ('Amuleto de vitalidad','accesorio', '{"vitalidad": 2}',                  70,  'Un amuleto que fortalece el cuerpo.'),
-  ('Anillo del cazador',  'accesorio', '{"agilidad": 1, "fuerza": 1}',       65,  'Favorito entre exploradores.');
+insert into equipment_catalog (nombre, slot, bonus, precio_oro, descripcion, color) values
+  ('Casco de cuero',      'cabeza',    '{"vitalidad": 1}',                 20,  'Protección básica para la cabeza.', '#8b5e34'),
+  ('Yelmo de hierro',     'cabeza',    '{"vitalidad": 2, "resistencia": 1}', 60,  'Yelmo resistente forjado en hierro.', '#9aa3ad'),
+  ('Corona del sabio',    'cabeza',    '{"mente": 3}',                      90,  'Otorga claridad mental.', '#c9a24b'),
+  ('Túnica de viaje',     'torso',     '{"agilidad": 1}',                   20,  'Liviana, ideal para moverse rápido.', '#4a7a5c'),
+  ('Coraza de cuero',     'torso',     '{"resistencia": 2}',                55,  'Armadura ligera de cuero curtido.', '#8b5e34'),
+  ('Armadura de placas',  'torso',     '{"resistencia": 3, "vitalidad": 2}', 140, 'Pesada pero muy protectora.', '#7a8290'),
+  ('Daga oxidada',        'arma',      '{"agilidad": 1}',                   15,  'Vieja pero filosa.', '#7a6a55'),
+  ('Espada corta',        'arma',      '{"fuerza": 2}',                     50,  'Espada equilibrada de acero.', '#b0b8c1'),
+  ('Espadón de guerra',   'arma',      '{"fuerza": 4, "resistencia": -1}',  120, 'Golpea fuerte, cuesta manejarla.', '#8a8f99'),
+  ('Báculo arcano',       'arma',      '{"mente": 3}',                      110, 'Canaliza energía mental en combate.', '#6a4fc9'),
+  ('Grebas de cuero',     'piernas',   '{"agilidad": 1, "resistencia": 1}',  35,  'Protección liviana para las piernas.', '#8b5e34'),
+  ('Botas del viajero',   'pies',      '{"agilidad": 2}',                   40,  'Botas cómodas para largas caminatas.', '#5c4a3a'),
+  ('Botas de hierro',     'pies',      '{"resistencia": 1, "vitalidad": 1}', 45,  'Pesadas pero firmes.', '#6b7178'),
+  ('Amuleto de vitalidad','accesorio', '{"vitalidad": 2}',                  70,  'Un amuleto que fortalece el cuerpo.', '#e0637a'),
+  ('Anillo del cazador',  'accesorio', '{"agilidad": 1, "fuerza": 1}',       65,  'Favorito entre exploradores.', '#c9a24b');
 
 -- ============================================================
 -- Seed: enemigos y zonas iniciales (árbol de 3 niveles de ejemplo)
