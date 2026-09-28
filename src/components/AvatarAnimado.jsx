@@ -2,7 +2,7 @@
 // caminata LPC (9 frames x 4 direcciones). Reproduce el ciclo de caminata
 // todo el tiempo; arrastrar horizontalmente rota el personaje entre las 4
 // direcciones disponibles (no hay 360 real, LPC solo tiene 4 orientaciones).
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   APARIENCIA_POR_DEFECTO,
   rutaCaraWalk,
@@ -18,8 +18,24 @@ const FILA_DIRECCION = { arriba: 0, izquierda: 1, abajo: 2, derecha: 3 }
 // Orden de "giro" al arrastrar: abajo -> derecha -> arriba -> izquierda -> abajo...
 const ORDEN_GIRO = ['abajo', 'derecha', 'arriba', 'izquierda']
 const PX_POR_PASO = 48
+const CUADROS = 9
+const MS_POR_CUADRO = 100
 
-function CapaAnimada({ src, direccion }) {
+// El ciclo de caminata avanza por JS (no con @keyframes+steps de CSS):
+// una animación CSS corriendo dentro de un contenedor `position: sticky`
+// puede pisarse con el repintado del sticky durante el scroll y mostrarse
+// partida un instante. Cambiar `translate` a mano con un timer no tiene
+// ese problema porque no hay ninguna animación nativa corriendo.
+function useCuadroCaminata() {
+  const [cuadro, setCuadro] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setCuadro((c) => (c + 1) % CUADROS), MS_POR_CUADRO)
+    return () => clearInterval(id)
+  }, [])
+  return cuadro
+}
+
+function CapaAnimada({ src, direccion, cuadro }) {
   if (!src) return null
   const fila = FILA_DIRECCION[direccion]
   return (
@@ -28,7 +44,7 @@ function CapaAnimada({ src, direccion }) {
         className="avatar-capa-hoja"
         style={{
           backgroundImage: `url(${src})`,
-          translate: `0% ${fila * -25}%`,
+          translate: `${(cuadro * -100) / CUADROS}% ${fila * -25}%`,
         }}
       />
     </div>
@@ -39,6 +55,7 @@ export default function AvatarAnimado({ apariencia }) {
   const a = { ...APARIENCIA_POR_DEFECTO, ...apariencia }
   const [turno, setTurno] = useState(0) // índice dentro de ORDEN_GIRO
   const arrastre = useRef(null)
+  const cuadro = useCuadroCaminata()
 
   const direccion = ORDEN_GIRO[turno]
 
@@ -78,7 +95,7 @@ export default function AvatarAnimado({ apariencia }) {
       onPointerCancel={onPointerUp}
     >
       {capas.map(({ src, key }) => (
-        <CapaAnimada key={key} src={src} direccion={direccion} />
+        <CapaAnimada key={key} src={src} direccion={direccion} cuadro={cuadro} />
       ))}
     </div>
   )

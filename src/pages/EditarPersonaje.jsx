@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Avatar from '../components/Avatar'
+import AvatarAnimado from '../components/AvatarAnimado'
 import {
   APARIENCIA_POR_DEFECTO,
   COLORES_PELO,
@@ -67,8 +67,8 @@ export default function EditarPersonaje() {
     <div className="pagina">
       <button onClick={() => navigate('/')} className="boton-volver">‹ Volver</button>
 
-      <div className="avatar-contenedor">
-        <Avatar apariencia={apariencia} />
+      <div className="avatar-contenedor avatar-contenedor-fijo">
+        <AvatarAnimado apariencia={apariencia} />
       </div>
 
       <div className="tarjeta">

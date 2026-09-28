@@ -26,6 +26,7 @@ body {
   background: var(--bg);
   color: var(--texto);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
 }
 
 .app {
@@ -296,6 +297,17 @@ button.activo {
   padding: 4px 0 8px;
 }
 
+/* En Editar personaje: el avatar queda pegado arriba al bajar por las
+   opciones, para ver el cambio en el momento sin volver a subir. */
+.avatar-contenedor-fijo {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 5;
+  background: var(--bg);
+  padding-top: 8px;
+  margin-top: -8px;
+}
+
 .avatar-lienzo {
   position: relative;
   width: 192px;
@@ -313,7 +325,7 @@ button.activo {
 }
 
 .avatar-lienzo-animado {
-  touch-action: pan-y;
+  touch-action: none;
   cursor: grab;
   user-select: none;
 }
@@ -332,12 +344,13 @@ button.activo {
   pointer-events: none;
 }
 
-/* La hoja completa (9 frames x 4 direcciones). La dirección se fija con
-   la propiedad `translate` (estática, por React); el ciclo de caminata
-   anima `transform` por separado -- se componen sin pisarse. Usamos
-   transform en vez de background-position porque animar
-   background-position con steps() no siempre "salta" limpio entre
-   frames en todos los navegadores (se vieron mezclas de dos frames). */
+/* La hoja completa (9 frames x 4 direcciones). Tanto el frame de
+   caminata como la dirección se fijan con la propiedad `translate`,
+   actualizada a mano por JS (ver AvatarAnimado.jsx) en vez de animarse
+   con @keyframes+steps de CSS: esa animación nativa, corriendo dentro
+   de un contenedor `position: sticky` (como en Editar personaje), puede
+   pisarse con el repintado del sticky durante el scroll y mostrarse
+   partida un instante. Fijar el valor a mano no tiene ese problema. */
 .avatar-capa-hoja {
   position: absolute;
   top: 0;
@@ -347,12 +360,6 @@ button.activo {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   image-rendering: pixelated;
-  animation: avatar-caminar 0.9s steps(9) infinite;
-}
-
-@keyframes avatar-caminar {
-  from { transform: translateX(0%); }
-  to { transform: translateX(-88.8889%); }
 }
 
 .encabezado-personaje .fila-stats-top {
