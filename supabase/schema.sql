@@ -21,6 +21,7 @@ insert into game_config (clave, valor) values
   ('combate_exponente_arriba', 1), -- qué tan gradual SUBE la chance por encima del 50% (estar en ventaja)
   ('chance_perder_item_al_fallar', 0.12), -- probabilidad de perder un ítem equipado al fallar un encuentro
   ('intentos_max_por_dia_por_zona', 3), -- tope de exploraciones por zona por día
+  ('venta_fraccion_precio', 0.6667), -- al vender un ítem del inventario, qué fracción del precio de tienda se recupera
   -- Fórmulas de XP de Entrenamiento (todas con rendimiento decreciente:
   -- exponente < 1). Ver función calcular_xp_entrenamiento más abajo.
   ('cardio_xp_factor', 8),
@@ -515,6 +516,51 @@ end;
 $$;
 
 grant execute on function comprar_item(bigint) to authenticated;
+
+-- ============================================================
+-- RPC: vender un ítem del inventario por una fracción de su precio
+-- de tienda (2/3 por defecto, centralizado en game_config).
+-- ============================================================
+create or replace function vender_item(p_inventory_id bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_character_id uuid;
+  v_item_id bigint;
+  v_precio numeric;
+  v_nombre text;
+  v_fraccion numeric;
+  v_oro_obtenido numeric;
+begin
+  select id into v_character_id from character where user_id = auth.uid();
+  if v_character_id is null then
+    raise exception 'personaje no encontrado';
+  end if;
+
+  select inv.item_id, ec.precio_oro, ec.nombre
+    into v_item_id, v_precio, v_nombre
+    from inventory inv
+    join equipment_catalog ec on ec.id = inv.item_id
+    where inv.id = p_inventory_id and inv.character_id = v_character_id;
+
+  if v_item_id is null then
+    raise exception 'item no encontrado en tu inventario';
+  end if;
+
+  select valor into v_fraccion from game_config where clave = 'venta_fraccion_precio';
+  v_oro_obtenido := round(v_precio * v_fraccion);
+
+  delete from inventory where id = p_inventory_id;
+  update character set oro = oro + v_oro_obtenido where id = v_character_id;
+
+  return jsonb_build_object('oro_obtenido', v_oro_obtenido, 'nombre_item', v_nombre);
+end;
+$$;
+
+grant execute on function vender_item(bigint) to authenticated;
 
 -- ============================================================
 -- Función compartida: calcula el poder del personaje (atributos +
