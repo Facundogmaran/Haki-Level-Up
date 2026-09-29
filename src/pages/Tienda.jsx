@@ -6,6 +6,7 @@ import {
   getCharacter,
   getEquipmentCatalog,
   getInventory,
+  venderItem,
 } from '../lib/game'
 
 const NOMBRES_SLOT = {
@@ -73,6 +74,18 @@ export default function Tienda() {
     setOcupado(false)
   }
 
+  async function handleVender(inventoryId) {
+    setOcupado(true)
+    setError('')
+    try {
+      await venderItem(inventoryId)
+      await cargar()
+    } catch (e) {
+      setError(e.message)
+    }
+    setOcupado(false)
+  }
+
   return (
     <div className="pagina">
       <div className="tarjeta fila-stats-top">
@@ -126,9 +139,14 @@ export default function Tienda() {
                   {NOMBRES_SLOT[inv.item.slot]} · {bonusTexto(inv.item.bonus)}
                 </p>
               </div>
-              <button disabled={ocupado} onClick={() => handleEquipar(inv.id, inv.equipado)}>
-                {inv.equipado ? 'Equipado' : 'Equipar'}
-              </button>
+              <div className="acciones-item-inventario">
+                <button disabled={ocupado} onClick={() => handleEquipar(inv.id, inv.equipado)}>
+                  {inv.equipado ? 'Equipado' : 'Equipar'}
+                </button>
+                <button disabled={ocupado} className="boton-vender" onClick={() => handleVender(inv.id)}>
+                  Vender 🪙{Math.round(inv.item.precio_oro * (2 / 3))}
+                </button>
+              </div>
             </div>
           ))}
         </div>

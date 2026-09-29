@@ -180,6 +180,19 @@ button.activo {
   gap: 12px;
 }
 
+.acciones-item-inventario {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.boton-vender {
+  font-size: 0.8rem;
+  color: var(--texto-tenue);
+  padding: 6px 10px;
+}
+
 .detalle-item {
   margin: 4px 0 0;
   font-size: 0.8rem;

@@ -56,6 +56,12 @@ export async function comprarItem(itemId) {
   if (error) throw error
 }
 
+export async function venderItem(inventoryId) {
+  const { data, error } = await supabase.rpc('vender_item', { p_inventory_id: inventoryId })
+  if (error) throw error
+  return data
+}
+
 export async function equiparItem(inventoryId) {
   const { error } = await supabase.from('inventory').update({ equipado: true }).eq('id', inventoryId)
   if (error) throw error
