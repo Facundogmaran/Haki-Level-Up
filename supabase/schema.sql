@@ -20,6 +20,7 @@ insert into game_config (clave, valor) values
   ('combate_exponente_abajo', 7), -- qué tan rápido CAE la chance por debajo del 50% (estar en desventaja)
   ('combate_exponente_arriba', 1), -- qué tan gradual SUBE la chance por encima del 50% (estar en ventaja)
   ('chance_perder_item_al_fallar', 0.12), -- probabilidad de perder un ítem equipado al fallar un encuentro
+  ('intentos_max_por_dia_por_zona', 3), -- tope de exploraciones por zona por día
   -- Fórmulas de XP de Entrenamiento (todas con rendimiento decreciente:
   -- exponente < 1). Ver función calcular_xp_entrenamiento más abajo.
   ('cardio_xp_factor', 8),
@@ -587,6 +588,31 @@ end;
 $$;
 
 -- ============================================================
+-- Función compartida: cuántos intentos de exploración le quedan hoy
+-- al personaje en una zona (tope diario centralizado en game_config).
+-- ============================================================
+create or replace function intentos_restantes_hoy(p_character_id uuid, p_zone_id bigint)
+returns int
+language plpgsql
+stable
+as $$
+declare
+  v_maximo int;
+  v_usados int;
+begin
+  select valor into v_maximo from game_config where clave = 'intentos_max_por_dia_por_zona';
+
+  select count(*) into v_usados
+    from encounter_log
+    where character_id = p_character_id
+      and zone_id = p_zone_id
+      and created_at::date = current_date;
+
+  return greatest(0, v_maximo - v_usados);
+end;
+$$;
+
+-- ============================================================
 -- RPC: previsualizar la chance de éxito de una zona SIN gastar el
 -- intento (de solo lectura, se puede llamar antes de "Explorar").
 -- ============================================================
@@ -605,7 +631,8 @@ begin
     raise exception 'personaje no encontrado';
   end if;
 
-  return calcular_chance_encuentro(v_character_id, p_zone_id);
+  return calcular_chance_encuentro(v_character_id, p_zone_id)
+    || jsonb_build_object('intentos_restantes', intentos_restantes_hoy(v_character_id, p_zone_id));
 end;
 $$;
 
@@ -650,6 +677,10 @@ begin
   -- requisito_nivel es solo una recomendación visual: se puede intentar
   -- cualquier zona a cualquier nivel, la chance ya queda baja sola si
   -- el personaje está por debajo de lo recomendado.
+  if intentos_restantes_hoy(v_character.id, p_zone_id) <= 0 then
+    raise exception 'sin intentos disponibles hoy para esta zona';
+  end if;
+
   select * into v_enemigo from enemies where id = v_zona.enemigo_id;
 
   v_calc := calcular_chance_encuentro(v_character.id, p_zone_id);
