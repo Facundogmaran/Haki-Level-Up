@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import MapaCaminata from '../components/MapaCaminata'
 import { getCharacter, getZones, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
 
 function formatearChance(chance) {
@@ -10,18 +11,20 @@ function formatearChance(chance) {
 
 export default function Mapa() {
   const [zonas, setZonas] = useState([])
-  const [nivel, setNivel] = useState(1)
+  const [personaje, setPersonaje] = useState(null)
   const [previews, setPreviews] = useState({})
   const [error, setError] = useState('')
-  const [resultado, setResultado] = useState(null)
+
+  const [zonaSeleccionadaId, setZonaSeleccionadaId] = useState(null)
   const [zonaActiva, setZonaActiva] = useState(null)
+  const [resultado, setResultado] = useState(null)
   const [luchando, setLuchando] = useState(false)
 
   async function cargar() {
     try {
-      const [z, personaje] = await Promise.all([getZones(), getCharacter()])
+      const [z, p] = await Promise.all([getZones(), getCharacter()])
       setZonas(z)
-      setNivel(personaje.nivel)
+      setPersonaje(p)
 
       const entries = await Promise.all(
         z.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
@@ -36,13 +39,24 @@ export default function Mapa() {
     cargar()
   }, [])
 
-  async function handleIntentar(zona) {
+  function handleTocarNodo(zona) {
+    setResultado(null)
+    setZonaActiva(null)
+    setZonaSeleccionadaId(zona.id)
+  }
+
+  function handleLlegar(zonaId) {
+    const zona = zonas.find((z) => z.id === zonaId)
+    setZonaActiva(zona ?? null)
+  }
+
+  async function handleIntentar() {
+    if (!zonaActiva) return
     setLuchando(true)
     setError('')
     setResultado(null)
-    setZonaActiva(zona)
     try {
-      const r = await intentarEncuentro(zona.id)
+      const r = await intentarEncuentro(zonaActiva.id)
       setResultado(r)
       await cargar()
     } catch (e) {
@@ -51,48 +65,41 @@ export default function Mapa() {
     setLuchando(false)
   }
 
-  function aplanarZonas() {
-    const hijasDe = (id) => zonas.filter((z) => z.zona_padre_id === id)
-    const resultado = []
-    function recorrer(zona, profundidad) {
-      resultado.push({ zona, profundidad })
-      hijasDe(zona.id).forEach((h) => recorrer(h, profundidad + 1))
-    }
-    zonas.filter((z) => !z.zona_padre_id).forEach((z) => recorrer(z, 0))
-    return resultado
-  }
+  if (error) return <p className="error">{error}</p>
+  if (!personaje || zonas.length === 0) return <p>Cargando mapa...</p>
 
-  function renderZona({ zona, profundidad }) {
-    const preview = previews[zona.id]
-    const porDebajoDeLoRecomendado = nivel < zona.requisito_nivel
-    return (
-      <div key={zona.id} style={{ marginLeft: profundidad * 16 }} className={`tarjeta zona ${porDebajoDeLoRecomendado ? 'zona-riesgosa' : ''}`}>
-        <div>
-          <strong>{zona.nombre}</strong>
-          <p className="detalle-item">
-            {zona.enemigo?.nombre} · Poder {zona.enemigo?.poder} · Nivel recomendado {zona.requisito_nivel}
-          </p>
-          {preview && (
-            <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
-              Probabilidad de éxito: {formatearChance(preview.chance)}
-            </p>
-          )}
-        </div>
-        <button disabled={luchando} onClick={() => handleIntentar(zona)}>
-          Explorar
-        </button>
-      </div>
-    )
-  }
+  const previewActiva = zonaActiva ? previews[zonaActiva.id] : null
+  const porDebajoDeLoRecomendado = zonaActiva ? personaje.nivel < zonaActiva.requisito_nivel : false
 
   return (
     <div className="pagina">
-      {error && <p className="error">{error}</p>}
+      <MapaCaminata
+        zonas={zonas}
+        nivel={personaje.nivel}
+        apariencia={personaje.apariencia}
+        zonaSeleccionadaId={zonaSeleccionadaId}
+        onSeleccionar={(zona) => handleTocarNodo(zona)}
+        onLlegar={handleLlegar}
+      />
 
       {zonaActiva && (
         <div className="tarjeta resultado-encuentro">
           <strong>{zonaActiva.nombre}</strong>
-          {luchando && <p>Resolviendo el encuentro...</p>}
+          <p className="detalle-item">
+            {zonaActiva.enemigo?.nombre} · Poder {zonaActiva.enemigo?.poder} · Nivel recomendado {zonaActiva.requisito_nivel}
+          </p>
+          {previewActiva && (
+            <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
+              Probabilidad de éxito: {formatearChance(previewActiva.chance)}
+            </p>
+          )}
+
+          {!resultado && (
+            <button disabled={luchando} onClick={handleIntentar}>
+              {luchando ? 'Resolviendo...' : 'Explorar'}
+            </button>
+          )}
+
           {resultado && (
             <>
               <p className={resultado.gano ? 'exito' : 'fallo'}>
@@ -109,12 +116,11 @@ export default function Mapa() {
               {!resultado.gano && resultado.item_perdido_nombre && (
                 <p className="detalle-item fallo">¡Perdiste {resultado.item_perdido_nombre} en el combate!</p>
               )}
+              <button onClick={() => setResultado(null)}>Cerrar</button>
             </>
           )}
         </div>
       )}
-
-      <div className="lista-items">{aplanarZonas().map((entrada) => renderZona(entrada))}</div>
     </div>
   )
 }

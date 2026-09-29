@@ -52,21 +52,24 @@ function CapaAnimada({ src, direccion, cuadro }) {
   )
 }
 
-export default function AvatarAnimado({ apariencia }) {
+export default function AvatarAnimado({ apariencia, direccion: direccionControlada, arrastrable = true }) {
   const a = { ...APARIENCIA_POR_DEFECTO, ...apariencia }
   const [turno, setTurno] = useState(0) // índice dentro de ORDEN_GIRO
   const arrastre = useRef(null)
   const cuadro = useCuadroCaminata()
 
-  const direccion = ORDEN_GIRO[turno]
+  // Si viene `direccion` por prop (ej: caminando hacia una zona en el
+  // mapa), esa manda y se ignora el arrastre manual.
+  const direccion = direccionControlada ?? ORDEN_GIRO[turno]
 
   function onPointerDown(e) {
+    if (!arrastrable) return
     arrastre.current = { ultimoX: e.clientX }
     e.currentTarget.setPointerCapture(e.pointerId)
   }
 
   function onPointerMove(e) {
-    if (!arrastre.current) return
+    if (!arrastrable || !arrastre.current) return
     const dx = e.clientX - arrastre.current.ultimoX
     if (Math.abs(dx) < PX_POR_PASO) return
     const pasos = Math.trunc(dx / PX_POR_PASO)

@@ -208,6 +208,99 @@ button.activo {
   color: var(--fallo);
 }
 
+/* ---- Mapa de caminata ---- */
+
+.mapa-lienzo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 300 / 560;
+  background: linear-gradient(180deg, #241f36, #1e1930);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.mapa-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mapa-camino {
+  stroke: var(--borde);
+  stroke-width: 4;
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+}
+
+.mapa-nodo {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  z-index: 2;
+}
+
+.mapa-nodo-punto {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--superficie-2);
+  border: 2px solid var(--oro);
+}
+
+.mapa-nodo-riesgoso .mapa-nodo-punto {
+  border-color: var(--fallo);
+}
+
+.mapa-nodo-activo .mapa-nodo-punto {
+  background: var(--oro);
+}
+
+.mapa-nodo-etiqueta {
+  font-size: 0.6rem;
+  color: var(--texto);
+  background: rgba(26, 22, 37, 0.85);
+  padding: 2px 5px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.mapa-personaje {
+  position: absolute;
+  transform: translate(-50%, -78%);
+  transition: left 0.9s ease, top 0.9s ease;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.mapa-personaje .avatar-lienzo {
+  width: 56px;
+  height: 56px;
+  background: none;
+}
+
+.mapa-caminando {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--texto-tenue);
+  background: rgba(26, 22, 37, 0.85);
+  padding: 3px 10px;
+  border-radius: 10px;
+  z-index: 3;
+}
+
 .resultado-encuentro {
   display: flex;
   flex-direction: column;
