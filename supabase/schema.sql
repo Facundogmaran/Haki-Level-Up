@@ -639,6 +639,21 @@ $$;
 grant execute on function previsualizar_encuentro(bigint) to authenticated;
 
 -- ============================================================
+-- Función compartida: si el personaje ya venció alguna vez al
+-- enemigo de una zona (para desbloquear la siguiente del árbol).
+-- ============================================================
+create or replace function zona_completada(p_character_id uuid, p_zone_id bigint)
+returns boolean
+language sql
+stable
+as $$
+  select exists(
+    select 1 from encounter_log
+    where character_id = p_character_id and zone_id = p_zone_id and resultado = true
+  );
+$$;
+
+-- ============================================================
 -- RPC: intentar un encuentro (tirada única) en una zona.
 -- Si falla: se pierde algo de oro (relacionado al oro que daría
 -- ganar) y hay una chance baja de perder un ítem EQUIPADO al azar.
@@ -661,6 +676,7 @@ declare
   v_oro_perdido numeric := 0;
   v_item_perdido_id bigint := null;
   v_item_perdido_nombre text := null;
+  v_item_perdido_slot text := null;
   v_inventory_perdido_id bigint;
   v_chance_perder_item numeric;
 begin
@@ -674,9 +690,14 @@ begin
     raise exception 'zona no encontrada';
   end if;
 
-  -- requisito_nivel es solo una recomendación visual: se puede intentar
-  -- cualquier zona a cualquier nivel, la chance ya queda baja sola si
-  -- el personaje está por debajo de lo recomendado.
+  -- requisito_nivel es solo una recomendación visual (la chance ya
+  -- queda baja sola si el personaje está por debajo). Lo que SÍ
+  -- bloquea es el progreso real: hay que haber completado la zona
+  -- padre al menos una vez para poder intentar esta.
+  if v_zona.zona_padre_id is not null and not zona_completada(v_character.id, v_zona.zona_padre_id) then
+    raise exception 'primero tenés que completar la zona anterior del mapa';
+  end if;
+
   if intentos_restantes_hoy(v_character.id, p_zone_id) <= 0 then
     raise exception 'sin intentos disponibles hoy para esta zona';
   end if;
@@ -704,8 +725,8 @@ begin
 
     select valor into v_chance_perder_item from game_config where clave = 'chance_perder_item_al_fallar';
     if random() < v_chance_perder_item then
-      select inv.id, inv.item_id, ec.nombre
-        into v_inventory_perdido_id, v_item_perdido_id, v_item_perdido_nombre
+      select inv.id, inv.item_id, ec.nombre, ec.slot
+        into v_inventory_perdido_id, v_item_perdido_id, v_item_perdido_nombre, v_item_perdido_slot
         from inventory inv
         join equipment_catalog ec on ec.id = inv.item_id
         where inv.character_id = v_character.id and inv.equipado
@@ -717,6 +738,7 @@ begin
       else
         v_item_perdido_id := null;
         v_item_perdido_nombre := null;
+        v_item_perdido_slot := null;
       end if;
     end if;
   end if;
@@ -731,6 +753,7 @@ begin
     'item_ganado_id', v_item_ganado,
     'oro_perdido', v_oro_perdido,
     'item_perdido_nombre', v_item_perdido_nombre,
+    'item_perdido_slot', v_item_perdido_slot,
     'enemigo', v_enemigo.nombre
   );
 end;
