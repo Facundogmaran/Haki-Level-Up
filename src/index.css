@@ -256,8 +256,25 @@ button.activo {
   border: 2px solid var(--oro);
 }
 
-.mapa-nodo-riesgoso .mapa-nodo-punto {
+.mapa-nodo-riesgosa .mapa-nodo-punto {
   border-color: var(--fallo);
+}
+
+.mapa-nodo-completada .mapa-nodo-punto {
+  background: var(--exito);
+  border-color: var(--exito);
+}
+
+.mapa-nodo-bloqueada {
+  opacity: 0.4;
+}
+
+.mapa-nodo-bloqueada .mapa-nodo-punto {
+  border-color: var(--texto-tenue);
+}
+
+.mapa-nodo:disabled {
+  cursor: default;
 }
 
 .mapa-nodo-activo .mapa-nodo-punto {

@@ -28,7 +28,7 @@ function direccionEntre(desde, hasta) {
   return dy > 0 ? 'abajo' : 'arriba'
 }
 
-export default function MapaCaminata({ zonas, nivel, apariencia, zonaSeleccionadaId, onSeleccionar, onLlegar }) {
+export default function MapaCaminata({ zonas, nivel, apariencia, completadas, zonaSeleccionadaId, onSeleccionar, onLlegar }) {
   const [posActualId, setPosActualId] = useState(zonas[0]?.id ?? null)
   const [direccion, setDireccion] = useState('abajo')
   const [caminando, setCaminando] = useState(false)
@@ -37,7 +37,15 @@ export default function MapaCaminata({ zonas, nivel, apariencia, zonaSeleccionad
   useEffect(() => () => clearTimeout(timeoutRef.current), [])
 
   useEffect(() => {
-    if (!zonaSeleccionadaId || zonaSeleccionadaId === posActualId) return
+    if (!zonaSeleccionadaId) return
+
+    // Ya estás parado ahí (incluida la posición inicial): abrí el
+    // panel directo, no hace falta caminar a ningún lado.
+    if (zonaSeleccionadaId === posActualId) {
+      onLlegar?.(zonaSeleccionadaId)
+      return
+    }
+
     const desde = posicionDe(posActualId, 0)
     const hasta = posicionDe(zonaSeleccionadaId, 0)
     setDireccion(direccionEntre(desde, hasta))
@@ -76,12 +84,21 @@ export default function MapaCaminata({ zonas, nivel, apariencia, zonaSeleccionad
 
       {zonas.map((z, i) => {
         const pos = posicionDe(z.id, i)
-        const bloqueada = nivel < z.requisito_nivel
+        const completada = completadas?.has(z.id)
+        const disponible = !z.zona_padre_id || completadas?.has(z.zona_padre_id)
+        const riesgosa = nivel < z.requisito_nivel
+
+        let estado = 'normal'
+        if (completada) estado = 'completada'
+        else if (!disponible) estado = 'bloqueada'
+        else if (riesgosa) estado = 'riesgosa'
+
         return (
           <button
             key={z.id}
-            className={`mapa-nodo ${bloqueada ? 'mapa-nodo-riesgoso' : ''} ${z.id === zonaSeleccionadaId ? 'mapa-nodo-activo' : ''}`}
+            className={`mapa-nodo mapa-nodo-${estado} ${z.id === zonaSeleccionadaId ? 'mapa-nodo-activo' : ''}`}
             style={{ left: `${(pos.x / MAPA_VIEWBOX.w) * 100}%`, top: `${(pos.y / MAPA_VIEWBOX.h) * 100}%` }}
+            disabled={!disponible}
             onClick={() => onSeleccionar?.(z)}
           >
             <span className="mapa-nodo-punto" />

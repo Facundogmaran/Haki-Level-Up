@@ -87,6 +87,14 @@ export async function previsualizarEncuentro(zoneId) {
   return data
 }
 
+// Ids de zona que el personaje ya completó (ganó) alguna vez, para
+// saber qué zona siguiente del árbol queda desbloqueada.
+export async function getZonasCompletadas() {
+  const { data, error } = await supabase.from('encounter_log').select('zone_id').eq('resultado', true)
+  if (error) throw error
+  return new Set(data.map((r) => r.zone_id))
+}
+
 export async function getHistorial(limit = 20) {
   const { data, error } = await supabase
     .from('encounter_log')

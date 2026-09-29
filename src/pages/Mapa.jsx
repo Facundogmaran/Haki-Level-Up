@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import MapaCaminata from '../components/MapaCaminata'
-import { getCharacter, getZones, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
+import { getCharacter, getZones, getZonasCompletadas, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
 
 function formatearChance(chance) {
   const pct = chance * 100
@@ -9,10 +9,20 @@ function formatearChance(chance) {
   return `${Math.round(pct)}%`
 }
 
+const NOMBRES_SLOT = {
+  cabeza: 'el casco',
+  torso: 'la armadura',
+  arma: 'el arma',
+  piernas: 'las piernas',
+  pies: 'las botas',
+  accesorio: 'el accesorio',
+}
+
 export default function Mapa() {
   const [zonas, setZonas] = useState([])
   const [personaje, setPersonaje] = useState(null)
   const [previews, setPreviews] = useState({})
+  const [completadas, setCompletadas] = useState(new Set())
   const [error, setError] = useState('')
 
   const [zonaSeleccionadaId, setZonaSeleccionadaId] = useState(null)
@@ -22,9 +32,10 @@ export default function Mapa() {
 
   async function cargar() {
     try {
-      const [z, p] = await Promise.all([getZones(), getCharacter()])
+      const [z, p, comp] = await Promise.all([getZones(), getCharacter(), getZonasCompletadas()])
       setZonas(z)
       setPersonaje(p)
+      setCompletadas(comp)
 
       const entries = await Promise.all(
         z.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
@@ -77,6 +88,7 @@ export default function Mapa() {
         zonas={zonas}
         nivel={personaje.nivel}
         apariencia={personaje.apariencia}
+        completadas={completadas}
         zonaSeleccionadaId={zonaSeleccionadaId}
         onSeleccionar={(zona) => handleTocarNodo(zona)}
         onLlegar={handleLlegar}
@@ -121,7 +133,9 @@ export default function Mapa() {
                 <p className="detalle-item fallo">Perdiste 🪙 {resultado.oro_perdido} en la huida.</p>
               )}
               {!resultado.gano && resultado.item_perdido_nombre && (
-                <p className="detalle-item fallo">¡Perdiste {resultado.item_perdido_nombre} en el combate!</p>
+                <p className="detalle-item fallo">
+                  ¡Perdiste {NOMBRES_SLOT[resultado.item_perdido_slot] ?? 'un ítem'} equipado: {resultado.item_perdido_nombre}!
+                </p>
               )}
               <button onClick={() => setResultado(null)}>Cerrar</button>
             </>
