@@ -89,14 +89,21 @@ export default function Mapa() {
             {zonaActiva.enemigo?.nombre} · Poder {zonaActiva.enemigo?.poder} · Nivel recomendado {zonaActiva.requisito_nivel}
           </p>
           {previewActiva && (
-            <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
-              Probabilidad de éxito: {formatearChance(previewActiva.chance)}
-            </p>
+            <>
+              <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
+                Probabilidad de éxito: {formatearChance(previewActiva.chance)}
+              </p>
+              <p className="detalle-item">Intentos hoy: {previewActiva.intentos_restantes} / 3</p>
+            </>
           )}
 
           {!resultado && (
-            <button disabled={luchando} onClick={handleIntentar}>
-              {luchando ? 'Resolviendo...' : 'Explorar'}
+            <button disabled={luchando || previewActiva?.intentos_restantes === 0} onClick={handleIntentar}>
+              {luchando
+                ? 'Resolviendo...'
+                : previewActiva?.intentos_restantes === 0
+                  ? 'Sin intentos hoy'
+                  : 'Explorar'}
             </button>
           )}
 
