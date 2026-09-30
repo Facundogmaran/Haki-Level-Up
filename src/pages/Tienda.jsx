@@ -254,7 +254,7 @@ export default function Tienda() {
           {personaje && (
             <div className="tarjeta vista-previa-equipo">
               <div className="avatar-contenedor">
-                <AvatarAnimado apariencia={personaje.apariencia} equipado={equipadoParaPreview} arrastrable={false} />
+                <AvatarAnimado apariencia={personaje.apariencia} equipado={equipadoParaPreview} />
               </div>
               <p className="detalle-item">Así se vería puesto (con el resto de tu equipo actual).</p>
             </div>

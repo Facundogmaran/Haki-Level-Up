@@ -649,7 +649,6 @@ update equipment_base set lpc_sprite_folder = 'diamond_staff_dark', lpc_zpos_bg 
 update equipment_base set lpc_sprite_folder = 'gnarled_staff_dark', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'gnarled_staff_dark';
 update equipment_base set lpc_sprite_folder = 'loop_staff_dark', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'loop_staff_dark';
 update equipment_base set lpc_sprite_folder = 'katana', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'katana';
-update equipment_base set lpc_sprite_folder = 'scimitar', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'scimitar';
 update equipment_base set lpc_sprite_folder = 'kite_shield', lpc_zpos_fg = 110 where base_key = 'kite_shield';
 
 -- --- Catálogo ampliado: bases sin variantes (31)
@@ -660,7 +659,6 @@ insert into equipment_base (base_key, nombre, descripcion, category) values
   ('axe_tool',            'Hacha de guerra',      'Hacha pesada de combate.', 'weapon'),
   ('hammer_tool',         'Martillo de guerra',   'Martillo contundente.', 'weapon'),
   ('pickaxe_tool',        'Pico de minero',       'Pico reconvertido en arma.', 'weapon'),
-  ('whip_tool',           'Látigo',               'Arma flexible de alcance.', 'weapon'),
   ('crusader_shield',     'Escudo cruzado',       'Escudo con emblema de cruz.', 'shield'),
   ('plus_shield',         'Escudo con cruz',      'Escudo reforzado con travesaños.', 'shield'),
   ('two_engrailed_shield','Escudo doble filo',    'Escudo de borde ondulado.', 'shield'),
@@ -673,8 +671,6 @@ insert into equipment_base (base_key, nombre, descripcion, category) values
   ('longsword_w',         'Espada larga',         'Espada de dos manos.', 'weapon'),
   ('rapier',              'Estoque',              'Espada fina de estocada.', 'weapon'),
   ('saber',                'Sable',                'Espada curva de caballería.', 'weapon'),
-  ('scimitar',             'Cimitarra',            'Espada curva ligera.', 'weapon'),
-  ('club',                 'Garrote',              'Arma contundente simple.', 'weapon'),
   ('flail',                'Mangual',              'Arma articulada con cadena.', 'weapon'),
   ('mace',                 'Maza',                 'Arma contundente pesada.', 'weapon'),
   ('waraxe',               'Hacha de batalla',     'Hacha de doble filo.', 'weapon'),
@@ -695,7 +691,6 @@ from (values
   ('axe_tool',             'Hacha de guerra',    55,  '{"fuerza": 2}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
   ('hammer_tool',          'Martillo de guerra', 60,  '{"fuerza": 2, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
   ('pickaxe_tool',         'Pico de minero',     50,  '{"fuerza": 2}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
-  ('whip_tool',            'Látigo',             45,  '{"agilidad": 2}'::jsonb,                          1,  0,  0, 0, 0, true,  false),
   ('crusader_shield',      'Escudo cruzado',     55,  '{"resistencia": 2}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
   ('plus_shield',          'Escudo con cruz',    50,  '{"resistencia": 2}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
   ('two_engrailed_shield', 'Escudo doble filo',  60,  '{"resistencia": 2, "vitalidad": 1}'::jsonb,       1,  0,  0, 0, 0, true,  false),
@@ -708,8 +703,6 @@ from (values
   ('longsword_w',          'Espada larga',       90,  '{"fuerza": 3}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
   ('rapier',               'Estoque',            70,  '{"agilidad": 2, "fuerza": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
   ('saber',                'Sable',              75,  '{"fuerza": 2, "agilidad": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
-  ('scimitar',             'Cimitarra',          70,  '{"fuerza": 2, "agilidad": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
-  ('club',                 'Garrote',            35,  '{"fuerza": 1}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
   ('flail',                'Mangual',            85,  '{"fuerza": 3, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
   ('mace',                 'Maza',               80,  '{"fuerza": 3}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
   ('waraxe',               'Hacha de batalla',   90,  '{"fuerza": 3, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
@@ -733,9 +726,8 @@ insert into enemies (nombre, poder, oro_min, oro_max, loot_base_id, loot_materia
     array[(select id from materials where nombre = 'copper'), (select id from materials where nombre = 'iron')], 0.15),
   ('Orco explorador',     30, 25, 45, (select id from equipment_base where base_key = 'arming_sword'),
     array[(select id from materials where nombre = 'copper')], 0.25),
-  ('Orco guerrero',       45, 35, 60, (select id from equipment_base where base_key = 'leather_vest'), null, 0.2),
-  ('Capitán orco',        65, 50, 90, (select id from equipment_base where base_key = 'plate_armour'),
-    array[(select id from materials where nombre = 'copper'), (select id from materials where nombre = 'iron')], 0.15);
+  ('Orco guerrero',       45, 35, 60, (select id from equipment_base where base_key = 'kite_shield'), null, 0.2),
+  ('Capitán orco',        65, 50, 90, (select id from equipment_base where base_key = 'spartan_shield'), null, 0.15);
 
 insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
   ('Bosque Lindero', null, 1, (select id from enemies where nombre = 'Jabalí salvaje'), 1);
