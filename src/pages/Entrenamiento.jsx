@@ -197,6 +197,16 @@ export default function Entrenamiento() {
     setSerieEditIndex(null)
   }
 
+  function duplicarSerie(idx) {
+    setEjerciciosAgregados((prev) =>
+      prev.map((e) => {
+        if (e.exercise_id !== ejercicioActivo.id) return e
+        const sets = [...e.sets.slice(0, idx + 1), { ...e.sets[idx] }, ...e.sets.slice(idx + 1)]
+        return { ...e, sets }
+      }),
+    )
+  }
+
   function eliminarSerie(idx) {
     setEjerciciosAgregados((prev) =>
       prev
@@ -544,6 +554,7 @@ export default function Entrenamiento() {
                   <span className="valor-atributo">{s.peso_kg} kg × {s.repeticiones}</span>
                   <span className="fila-atributo-acciones">
                     <button onClick={() => empezarEdicionSerie(i)}>✎</button>
+                    <button onClick={() => duplicarSerie(i)} title="Duplicar serie" aria-label="Duplicar serie">⧉</button>
                     <button onClick={() => eliminarSerie(i)}>🗑</button>
                   </span>
                 </div>
