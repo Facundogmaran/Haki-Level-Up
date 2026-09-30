@@ -73,7 +73,7 @@ export async function getEquipmentPorCategoria(category) {
   const { data, error } = await supabase
     .from('equipment_base')
     .select(
-      'id, base_key, nombre, descripcion, category, admite_colores, colores:equipment_base_colores(color:colors(*)), variantes:equipment_variants(*, material:materials(*))',
+      'id, base_key, nombre, descripcion, category, admite_colores, lpc_sprite_folder, lpc_zpos_bg, lpc_zpos_fg, colores:equipment_base_colores(color:colors(*)), variantes:equipment_variants(*, material:materials(*))',
     )
     .eq('category', category)
     .order('nombre')

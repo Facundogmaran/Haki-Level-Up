@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import AvatarAnimado from '../components/AvatarAnimado'
+import IconoEquipo from '../components/IconoEquipo'
 import {
   comprarItem,
   desequiparItem,
@@ -61,6 +63,13 @@ function requisitosTexto(variante) {
   return partes.join(' · ')
 }
 
+// Clave de variante visual (nombre de material o de color) para armar
+// la ruta del sprite -- mismo criterio que capasEquipoWalk en
+// avatarAssets.js, para que el ícono coincida con lo que se ve puesto.
+function claveVisual(materialNombre, colorNombre) {
+  return materialNombre ?? colorNombre ?? 'default'
+}
+
 export default function Tienda() {
   const [tab, setTab] = useState('tienda')
   const [categoriaActual, setCategoriaActual] = useState(null)
@@ -68,6 +77,7 @@ export default function Tienda() {
   const [conteo, setConteo] = useState({})
   const [basesCategoria, setBasesCategoria] = useState([])
   const [colorElegido, setColorElegido] = useState(null)
+  const [previewVarianteId, setPreviewVarianteId] = useState(null)
   const [inventario, setInventario] = useState([])
   const [personaje, setPersonaje] = useState(null)
   const [oro, setOro] = useState(0)
@@ -108,6 +118,10 @@ export default function Tienda() {
       .then(setBasesCategoria)
       .catch((e) => setError(e.message))
   }, [categoriaActual])
+
+  useEffect(() => {
+    setPreviewVarianteId(baseActual?.variantes[0]?.id ?? null)
+  }, [baseActual])
 
   const idsEnInventario = new Set(inventario.map((i) => i.item.id))
 
@@ -150,6 +164,21 @@ export default function Tienda() {
     setOcupado(false)
   }
 
+  const colorSeleccionado = baseActual?.colores?.find((c) => c.id === colorElegido) ?? null
+  const previewVariante = baseActual?.variantes.find((v) => v.id === previewVarianteId) ?? null
+
+  const equipadoParaPreview = baseActual
+    ? [
+        ...inventario.filter((i) => i.equipado && i.item.base.category !== baseActual.category),
+        {
+          id: 'preview',
+          equipado: true,
+          color: colorSeleccionado,
+          item: { base: baseActual, material: previewVariante?.material ?? null },
+        },
+      ]
+    : []
+
   return (
     <div className="pagina">
       <div className="tarjeta fila-stats-top">
@@ -181,32 +210,36 @@ export default function Tienda() {
 
       {tab === 'tienda' && categoriaActual && !baseActual && (
         <>
-          <button
-            className="boton-volver"
-            onClick={() => setCategoriaActual(null)}
-          >
+          <button className="boton-volver" onClick={() => setCategoriaActual(null)}>
             ← Volver a categorías
           </button>
           <h3>{NOMBRES_CATEGORIA[categoriaActual]}</h3>
           <div className="lista-items">
             {basesCategoria.length === 0 && <p>No hay equipamiento disponible en esta categoría todavía.</p>}
-            {basesCategoria.map((base) => (
-              <button
-                key={base.id}
-                className="tarjeta item-catalogo item-catalogo-boton"
-                onClick={() => setBaseActual(base)}
-              >
-                <div>
-                  <strong>{base.nombre}</strong>
-                  {base.descripcion && <p className="descripcion-item">{base.descripcion}</p>}
-                </div>
-                <span className="detalle-item">
-                  {base.variantes.length === 1
-                    ? `🪙 ${base.variantes[0].precio_oro}`
-                    : `🪙 ${base.variantes[0].precio_oro} - ${base.variantes[base.variantes.length - 1].precio_oro}`}
-                </span>
-              </button>
-            ))}
+            {basesCategoria.map((base) => {
+              const primera = base.variantes[0]
+              const claveIcono = claveVisual(primera?.material?.nombre, base.colores?.[0]?.nombre)
+              return (
+                <button
+                  key={base.id}
+                  className="tarjeta item-catalogo item-catalogo-boton"
+                  onClick={() => setBaseActual(base)}
+                >
+                  <div className="item-catalogo-con-icono">
+                    <IconoEquipo carpeta={base.lpc_sprite_folder} variante={claveIcono} tieneBg={base.lpc_zpos_bg != null} />
+                    <div>
+                      <strong>{base.nombre}</strong>
+                      {base.descripcion && <p className="descripcion-item">{base.descripcion}</p>}
+                    </div>
+                  </div>
+                  <span className="detalle-item">
+                    {base.variantes.length === 1
+                      ? `🪙 ${base.variantes[0].precio_oro}`
+                      : `🪙 ${base.variantes[0].precio_oro} - ${base.variantes[base.variantes.length - 1].precio_oro}`}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </>
       )}
@@ -217,6 +250,15 @@ export default function Tienda() {
             ← Volver a {NOMBRES_CATEGORIA[categoriaActual]}
           </button>
           <h3>{baseActual.nombre}</h3>
+
+          {personaje && (
+            <div className="tarjeta vista-previa-equipo">
+              <div className="avatar-contenedor">
+                <AvatarAnimado apariencia={personaje.apariencia} equipado={equipadoParaPreview} arrastrable={false} />
+              </div>
+              <p className="detalle-item">Así se vería puesto (con el resto de tu equipo actual).</p>
+            </div>
+          )}
 
           {baseActual.admite_colores && (
             <div className="tarjeta selector-color">
@@ -240,15 +282,26 @@ export default function Tienda() {
             {baseActual.variantes.map((variante) => {
               const yaLoTiene = idsEnInventario.has(variante.id)
               const sinColorElegido = baseActual.admite_colores && colorElegido === null
+              const claveIcono = claveVisual(variante.material?.nombre, colorSeleccionado?.nombre)
               return (
-                <div key={variante.id} className="tarjeta item-catalogo">
-                  <div>
-                    <strong>{variante.nombre}</strong>
-                    <p className="detalle-item">{bonusTexto(variante.bonus)}</p>
+                <div
+                  key={variante.id}
+                  className={`tarjeta item-catalogo item-catalogo-clicable${previewVarianteId === variante.id ? ' item-catalogo-previsualizado' : ''}`}
+                  onClick={() => setPreviewVarianteId(variante.id)}
+                >
+                  <div className="item-catalogo-con-icono">
+                    <IconoEquipo carpeta={baseActual.lpc_sprite_folder} variante={claveIcono} tieneBg={baseActual.lpc_zpos_bg != null} />
+                    <div>
+                      <strong>{variante.nombre}</strong>
+                      <p className="detalle-item">{bonusTexto(variante.bonus)}</p>
+                    </div>
                   </div>
                   <button
                     disabled={ocupado || yaLoTiene || oro < variante.precio_oro || sinColorElegido}
-                    onClick={() => handleComprar(variante.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleComprar(variante.id)
+                    }}
                   >
                     {yaLoTiene ? 'Ya lo tenés' : `🪙 ${variante.precio_oro}`}
                   </button>
@@ -265,28 +318,33 @@ export default function Tienda() {
           {inventario.map((inv) => {
             const faltantes = requisitosFaltantes(inv.item, personaje)
             const bloqueado = faltantes.length > 0
+            const claveIcono = claveVisual(inv.item.material?.nombre, inv.color?.nombre)
             return (
               <div key={inv.id} className="tarjeta item-catalogo">
-                <div>
-                  <strong>
-                    {bloqueado && '🔒 '}
-                    {inv.item.nombre}
-                  </strong>
-                  <p className="detalle-item">
-                    {NOMBRES_CATEGORIA[inv.item.base.category]} · {bonusTexto(inv.item.bonus)}
-                    {inv.color && <> · Color: {inv.color.nombre}</>}
-                  </p>
-                  {bloqueado && (
-                    <p className="detalle-item fallo">
-                      Requiere: {requisitosTexto(inv.item)} — te faltan: {faltantes.join(', ')}
+                <div className="item-catalogo-con-icono">
+                  <IconoEquipo
+                    carpeta={inv.item.base.lpc_sprite_folder}
+                    variante={claveIcono}
+                    tieneBg={inv.item.base.lpc_zpos_bg != null}
+                  />
+                  <div>
+                    <strong>
+                      {bloqueado && '🔒 '}
+                      {inv.item.nombre}
+                    </strong>
+                    <p className="detalle-item">
+                      {NOMBRES_CATEGORIA[inv.item.base.category]} · {bonusTexto(inv.item.bonus)}
+                      {inv.color && <> · Color: {inv.color.nombre}</>}
                     </p>
-                  )}
+                    {bloqueado && (
+                      <p className="detalle-item fallo">
+                        Requiere: {requisitosTexto(inv.item)} — te faltan: {faltantes.join(', ')}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="acciones-item-inventario">
-                  <button
-                    disabled={ocupado || bloqueado}
-                    onClick={() => handleEquipar(inv.id, inv.equipado)}
-                  >
+                  <button disabled={ocupado || bloqueado} onClick={() => handleEquipar(inv.id, inv.equipado)}>
                     {inv.equipado ? 'Equipado' : 'Equipar'}
                   </button>
                   <button disabled={ocupado} className="boton-vender" onClick={() => handleVender(inv.id)}>
