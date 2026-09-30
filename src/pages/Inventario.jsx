@@ -103,30 +103,32 @@ export default function Inventario() {
   }
 
   return (
-    <div className="pagina pagina-con-avatar-fijo">
-      <button onClick={() => navigate('/')} className="boton-volver">‹ Volver</button>
-
-      <div className="avatar-contenedor avatar-contenedor-fijo">
+    <div className="pantalla-avatar-fijo">
+      <div className="avatar-contenedor">
         <AvatarAnimado apariencia={personaje.apariencia} equipado={equipado} />
       </div>
 
-      {error && <p className="error">{error}</p>}
+      <div className="contenido-scrollable">
+        <button onClick={() => navigate('/')} className="boton-volver">‹ Volver</button>
 
-      {inventario.length === 0 && <p className="detalle-item">Todavía no tenés equipamiento.</p>}
+        {error && <p className="error">{error}</p>}
 
-      {equipados.length > 0 && (
-        <div className="tarjeta">
-          <h3>Equipados</h3>
-          <div className="lista-items">{equipados.map(tarjetaItem)}</div>
-        </div>
-      )}
+        {inventario.length === 0 && <p className="detalle-item">Todavía no tenés equipamiento.</p>}
 
-      {noEquipados.length > 0 && (
-        <div className="tarjeta">
-          <h3>Inventario</h3>
-          <div className="lista-items">{noEquipados.map(tarjetaItem)}</div>
-        </div>
-      )}
+        {equipados.length > 0 && (
+          <div className="tarjeta">
+            <h3>Equipados</h3>
+            <div className="lista-items">{equipados.map(tarjetaItem)}</div>
+          </div>
+        )}
+
+        {noEquipados.length > 0 && (
+          <div className="tarjeta">
+            <h3>Inventario</h3>
+            <div className="lista-items">{noEquipados.map(tarjetaItem)}</div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

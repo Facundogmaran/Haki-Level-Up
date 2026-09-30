@@ -420,29 +420,42 @@ button.activo {
   padding: 4px 0 8px;
 }
 
-/* En Editar personaje e Inventario: el avatar queda fijo arriba mientras
-   el resto de la lista scrollea debajo. Usamos `position: fixed` (no
-   `sticky`): en Safari/iOS, `position: sticky` dentro de este layout
-   pinta de forma intermitente el contenido que sigue por ENCIMA del
-   avatar durante el scroll, incluso con la posición ya calculada bien
-   (bug conocido de WebKit) -- `fixed` no depende de ese cálculo y no
-   tiene ese problema. Como sale del flujo, `.pagina-con-avatar-fijo`
-   le reserva el espacio (mismo alto que este bloque) con padding-top. */
-.avatar-contenedor-fijo {
+/* Editar personaje e Inventario: el avatar no se mueve nunca -- en vez
+   de sticky/fixed "clásico" superpuesto al scroll del documento (que en
+   iOS, con la app agregada a la pantalla de inicio, puede rebotar y
+   dejar ver contenido por encima del avatar durante el scroll elástico;
+   bug de WebKit en modo standalone que no ocurre en Safari normal),
+   armamos una caja propia: el avatar arriba SIN scroll, y abajo un
+   contenedor con su scroll interno (`.contenido-scrollable`) para el
+   resto. El rebote elástico queda contenido adentro de esa caja y nunca
+   puede tapar al avatar, porque el documento en sí no scrollea. */
+.pantalla-avatar-fijo {
   position: fixed;
   top: env(safe-area-inset-top);
+  bottom: 76px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  z-index: 20;
-  background: var(--bg);
-  padding: 12px 16px;
-  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
 }
 
-.pagina-con-avatar-fijo {
-  padding-top: 216px;
+.pantalla-avatar-fijo .avatar-contenedor {
+  flex-shrink: 0;
+  padding: 12px 16px 8px;
+}
+
+.contenido-scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 16px;
 }
 
 .avatar-lienzo {
