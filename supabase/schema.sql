@@ -477,44 +477,6 @@ create policy "propios ejercicios de entrenamiento" on workout_exercises
 -- Acero van a tienda; Plata/Oro y las piezas pesadas sin material
 -- (halberd, diamond staff, escudos grandes) son solo de misión.
 -- ============================================================
-insert into equipment_base (base_key, nombre, descripcion, category) values
-  ('casco_cuero',        'Casco de cuero',       'Protección básica para la cabeza.', 'head'),
-  ('yelmo_hierro',       'Yelmo de hierro',      'Yelmo resistente forjado en hierro.', 'head'),
-  ('corona_sabio',       'Corona del sabio',     'Otorga claridad mental.', 'head'),
-  ('tunica_viaje',       'Túnica de viaje',      'Liviana, ideal para moverse rápido.', 'torso'),
-  ('coraza_cuero',       'Coraza de cuero',      'Armadura ligera de cuero curtido.', 'torso'),
-  ('armadura_placas_basica', 'Armadura de placas', 'Pesada pero muy protectora.', 'torso'),
-  ('daga_oxidada',       'Daga oxidada',         'Vieja pero filosa.', 'weapon'),
-  ('espada_corta',       'Espada corta',         'Espada equilibrada de acero.', 'weapon'),
-  ('espadon_guerra',     'Espadón de guerra',    'Golpea fuerte, cuesta manejarla.', 'weapon'),
-  ('baculo_arcano',      'Báculo arcano',        'Canaliza energía mental en combate.', 'weapon'),
-  ('grebas_cuero',       'Grebas de cuero',      'Protección liviana para las piernas.', 'legs'),
-  ('botas_viajero',      'Botas del viajero',    'Botas cómodas para largas caminatas.', 'feet'),
-  ('botas_hierro',       'Botas de hierro',      'Pesadas pero firmes.', 'feet'),
-  ('amuleto_vitalidad',  'Amuleto de vitalidad', 'Un amuleto que fortalece el cuerpo.', 'neck'),
-  ('anillo_cazador',     'Anillo del cazador',   'Favorito entre exploradores.', 'ring');
-
-insert into equipment_variants (base_id, material_id, nombre, precio_oro, bonus, shop_disponible, mission_drop)
-select b.id, null, cfg.nombre, cfg.precio, cfg.bonus, true, false
-from (values
-  ('casco_cuero',            'Casco de cuero',       20,  '{"vitalidad": 1}'::jsonb),
-  ('yelmo_hierro',           'Yelmo de hierro',      60,  '{"vitalidad": 2, "resistencia": 1}'::jsonb),
-  ('corona_sabio',           'Corona del sabio',     90,  '{"mente": 3}'::jsonb),
-  ('tunica_viaje',           'Túnica de viaje',      20,  '{"agilidad": 1}'::jsonb),
-  ('coraza_cuero',           'Coraza de cuero',      55,  '{"resistencia": 2}'::jsonb),
-  ('armadura_placas_basica', 'Armadura de placas',   140, '{"resistencia": 3, "vitalidad": 2}'::jsonb),
-  ('daga_oxidada',           'Daga oxidada',         15,  '{"agilidad": 1}'::jsonb),
-  ('espada_corta',           'Espada corta',         50,  '{"fuerza": 2}'::jsonb),
-  ('espadon_guerra',         'Espadón de guerra',    120, '{"fuerza": 4, "resistencia": -1}'::jsonb),
-  ('baculo_arcano',          'Báculo arcano',        110, '{"mente": 3}'::jsonb),
-  ('grebas_cuero',           'Grebas de cuero',      35,  '{"agilidad": 1, "resistencia": 1}'::jsonb),
-  ('botas_viajero',          'Botas del viajero',    40,  '{"agilidad": 2}'::jsonb),
-  ('botas_hierro',           'Botas de hierro',      45,  '{"resistencia": 1, "vitalidad": 1}'::jsonb),
-  ('amuleto_vitalidad',      'Amuleto de vitalidad', 70,  '{"vitalidad": 2}'::jsonb),
-  ('anillo_cazador',         'Anillo del cazador',   65,  '{"agilidad": 1, "fuerza": 1}'::jsonb)
-) as cfg(base_key, nombre, precio, bonus)
-join equipment_base b on b.base_key = cfg.base_key;
-
 -- --- Catálogo ampliado: bases con materiales (20)
 insert into equipment_base (base_key, nombre, descripcion, category) values
   ('mail_head',            'Capucha de malla',    'Capucha tejida en anillos metálicos.', 'head'),
@@ -660,18 +622,6 @@ update equipment_base set lpc_sprite_folder = 'pantaloons', lpc_zpos_fg = 20 whe
 update equipment_base set lpc_sprite_folder = 'legion_skirt', lpc_zpos_fg = 20 where base_key = 'legion_skirt';
 update equipment_base set lpc_sprite_folder = 'basic_shoes', lpc_zpos_fg = 15 where base_key = 'basic_shoes';
 update equipment_base set lpc_sprite_folder = 'folded_rim_boots', lpc_zpos_fg = 25 where base_key = 'folded_rim_boots';
-update equipment_base set lpc_sprite_folder = 'casco_cuero', lpc_zpos_fg = 130 where base_key = 'casco_cuero';
-update equipment_base set lpc_sprite_folder = 'yelmo_hierro', lpc_zpos_fg = 135 where base_key = 'yelmo_hierro';
-update equipment_base set lpc_sprite_folder = 'corona_sabio', lpc_zpos_fg = 130 where base_key = 'corona_sabio';
-update equipment_base set lpc_sprite_folder = 'coraza_cuero', lpc_zpos_fg = 60 where base_key = 'coraza_cuero';
-update equipment_base set lpc_sprite_folder = 'armadura_placas_basica', lpc_zpos_fg = 60 where base_key = 'armadura_placas_basica';
-update equipment_base set lpc_sprite_folder = 'daga_oxidada', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'daga_oxidada';
-update equipment_base set lpc_sprite_folder = 'espada_corta', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'espada_corta';
-update equipment_base set lpc_sprite_folder = 'espadon_guerra', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'espadon_guerra';
-update equipment_base set lpc_sprite_folder = 'baculo_arcano', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'baculo_arcano';
-update equipment_base set lpc_sprite_folder = 'botas_viajero', lpc_zpos_fg = 25 where base_key = 'botas_viajero';
-update equipment_base set lpc_sprite_folder = 'botas_hierro', lpc_zpos_fg = 15 where base_key = 'botas_hierro';
-update equipment_base set lpc_sprite_folder = 'anillo_cazador', lpc_zpos_fg = 75 where base_key = 'anillo_cazador';
 update equipment_base set lpc_sprite_folder = 'ring_gem', lpc_zpos_fg = 75 where base_key = 'ring_gem';
 update equipment_base set lpc_sprite_folder = 'leather_vest', lpc_zpos_fg = 60 where base_key = 'leather_vest';
 update equipment_base set lpc_sprite_folder = 'sandals', lpc_zpos_fg = 15 where base_key = 'sandals';
@@ -698,12 +648,9 @@ update equipment_base set lpc_sprite_folder = 's_staff_dark', lpc_zpos_bg = 9, l
 update equipment_base set lpc_sprite_folder = 'diamond_staff_dark', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'diamond_staff_dark';
 update equipment_base set lpc_sprite_folder = 'gnarled_staff_dark', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'gnarled_staff_dark';
 update equipment_base set lpc_sprite_folder = 'loop_staff_dark', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'loop_staff_dark';
-update equipment_base set lpc_sprite_folder = 'grebas_cuero', lpc_zpos_fg = 20 where base_key = 'grebas_cuero';
-update equipment_base set lpc_sprite_folder = 'tunica_viaje', lpc_zpos_fg = 35 where base_key = 'tunica_viaje';
 update equipment_base set lpc_sprite_folder = 'katana', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'katana';
 update equipment_base set lpc_sprite_folder = 'scimitar', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'scimitar';
 update equipment_base set lpc_sprite_folder = 'kite_shield', lpc_zpos_fg = 110 where base_key = 'kite_shield';
-update equipment_base set lpc_sprite_folder = 'amuleto_vitalidad', lpc_zpos_fg = 81 where base_key = 'amuleto_vitalidad';
 
 -- --- Catálogo ampliado: bases sin variantes (31)
 insert into equipment_base (base_key, nombre, descripcion, category) values
@@ -781,12 +728,14 @@ join equipment_base b on b.base_key = cfg.base_key;
 -- ============================================================
 insert into enemies (nombre, poder, oro_min, oro_max, loot_base_id, loot_material_ids, loot_chance) values
   ('Jabalí salvaje',      8,  5,  15, (select id from equipment_base where base_key = 'hood'), null, 0.15),
-  ('Bandido del camino',  14, 10, 25, (select id from equipment_base where base_key = 'daga_oxidada'), null, 0.2),
+  ('Bandido del camino',  14, 10, 25, (select id from equipment_base where base_key = 'dagger'), null, 0.2),
   ('Lobo del bosque',     20, 15, 30, (select id from equipment_base where base_key = 'arming_sword'),
     array[(select id from materials where nombre = 'copper'), (select id from materials where nombre = 'iron')], 0.15),
-  ('Orco explorador',     30, 25, 45, (select id from equipment_base where base_key = 'espada_corta'), null, 0.25),
-  ('Orco guerrero',       45, 35, 60, (select id from equipment_base where base_key = 'coraza_cuero'), null, 0.2),
-  ('Capitán orco',        65, 50, 90, (select id from equipment_base where base_key = 'armadura_placas_basica'), null, 0.15);
+  ('Orco explorador',     30, 25, 45, (select id from equipment_base where base_key = 'arming_sword'),
+    array[(select id from materials where nombre = 'copper')], 0.25),
+  ('Orco guerrero',       45, 35, 60, (select id from equipment_base where base_key = 'leather_vest'), null, 0.2),
+  ('Capitán orco',        65, 50, 90, (select id from equipment_base where base_key = 'plate_armour'),
+    array[(select id from materials where nombre = 'copper'), (select id from materials where nombre = 'iron')], 0.15);
 
 insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
   ('Bosque Lindero', null, 1, (select id from enemies where nombre = 'Jabalí salvaje'), 1);
