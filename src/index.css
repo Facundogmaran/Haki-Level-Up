@@ -563,10 +563,6 @@ button.activo {
   image-rendering: pixelated;
 }
 
-.miniatura-opcion:not(:has(img)) {
-  font-size: 1.4rem;
-}
-
 .fila-equipamiento {
   display: flex;
   flex-wrap: wrap;

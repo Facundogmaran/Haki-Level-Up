@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
+import IconoNinguno from '../components/IconoNinguno'
 import {
   APARIENCIA_POR_DEFECTO,
   COLORES_PELO,
@@ -113,7 +114,7 @@ export default function EditarPersonaje() {
             title="Ninguno"
             aria-label="Ninguno"
           >
-            🚫
+            <IconoNinguno />
           </button>
           {Object.entries(PEINADOS_AGRUPADOS).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
@@ -144,7 +145,7 @@ export default function EditarPersonaje() {
             title="Ninguno"
             aria-label="Ninguno"
           >
-            🚫
+            <IconoNinguno />
           </button>
           {Object.entries(VELLO_AGRUPADO).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
