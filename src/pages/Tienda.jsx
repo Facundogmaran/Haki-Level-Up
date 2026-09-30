@@ -283,6 +283,7 @@ export default function Tienda() {
               const yaLoTiene = idsEnInventario.has(variante.id)
               const sinColorElegido = baseActual.admite_colores && colorElegido === null
               const claveIcono = claveVisual(variante.material?.nombre, colorSeleccionado?.nombre)
+              const faltantes = requisitosFaltantes(variante, personaje)
               return (
                 <div
                   key={variante.id}
@@ -293,7 +294,13 @@ export default function Tienda() {
                     <IconoEquipo carpeta={baseActual.lpc_sprite_folder} variante={claveIcono} tieneBg={baseActual.lpc_zpos_bg != null} />
                     <div>
                       <strong>{variante.nombre}</strong>
-                      <p className="detalle-item">{bonusTexto(variante.bonus)}</p>
+                      {faltantes.length > 0 ? (
+                        <p className="detalle-item fallo">
+                          🔒 Requiere: {requisitosTexto(variante)} — te faltan: {faltantes.join(', ')}
+                        </p>
+                      ) : (
+                        <p className="detalle-item">{bonusTexto(variante.bonus)}</p>
+                      )}
                     </div>
                   </div>
                   <button
