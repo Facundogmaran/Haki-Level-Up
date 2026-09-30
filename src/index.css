@@ -882,6 +882,15 @@ button.activo {
   font-size: 0.85rem;
 }
 
+.fila-atributo-editable {
+  grid-template-columns: 1fr auto auto auto;
+}
+
+.fila-atributo-editable button {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
 .vista-previa-equipo {
   text-align: center;
 }

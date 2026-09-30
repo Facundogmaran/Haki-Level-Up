@@ -120,8 +120,15 @@ export default function Personaje() {
           {ATRIBUTOS.map((atributo) => {
             const bonus = bonusEquipo[atributo]
             return (
-              <div key={atributo} className="fila-atributo">
+              <div key={atributo} className="fila-atributo fila-atributo-editable">
                 <span className="nombre-atributo">{NOMBRES[atributo]}</span>
+                {personaje[atributo] > 5 ? (
+                  <button disabled={asignando} onClick={() => handleQuitar(atributo)}>
+                    −
+                  </button>
+                ) : (
+                  <span />
+                )}
                 <span className="valor-atributo">
                   {personaje[atributo] + bonus}
                   {bonus !== 0 && (
@@ -132,18 +139,13 @@ export default function Personaje() {
                     </span>
                   )}
                 </span>
-                <span className="fila-atributo-acciones">
-                  {personaje[atributo] > 5 && (
-                    <button disabled={asignando} onClick={() => handleQuitar(atributo)}>
-                      −
-                    </button>
-                  )}
-                  {personaje.puntos_libres > 0 && (
-                    <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
-                      +
-                    </button>
-                  )}
-                </span>
+                {personaje.puntos_libres > 0 ? (
+                  <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
+                    +
+                  </button>
+                ) : (
+                  <span />
+                )}
               </div>
             )
           })}
