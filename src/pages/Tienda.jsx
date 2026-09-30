@@ -232,6 +232,7 @@ export default function Tienda() {
                   />
                 ))}
               </div>
+              {colorElegido === null && <p className="detalle-item">Elegí un color para poder comprar.</p>}
             </div>
           )}
 
