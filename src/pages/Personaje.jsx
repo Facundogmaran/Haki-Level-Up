@@ -19,19 +19,6 @@ const NOMBRES = {
   mente: 'Mente',
 }
 
-const ICONOS_SLOT = {
-  head: '🪖',
-  neck: '📿',
-  ring: '💍',
-  shoulder: '🛡️',
-  gloves: '🧤',
-  torso: '👕',
-  legs: '👖',
-  feet: '👟',
-  weapon: '⚔️',
-  shield: '🛡️',
-}
-
 export default function Personaje() {
   const navigate = useNavigate()
   const [personaje, setPersonaje] = useState(null)
@@ -91,6 +78,23 @@ export default function Personaje() {
   return (
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
+        <button
+          className="icono-cabecera icono-cabecera-izq"
+          onClick={() => navigate('/personaje/inventario')}
+          aria-label="Inventario"
+          title="Inventario"
+        >
+          🎒
+        </button>
+        <button
+          className="icono-cabecera icono-cabecera-der"
+          onClick={() => navigate('/personaje/editar')}
+          aria-label="Editar personaje"
+          title="Editar personaje"
+        >
+          ✎
+        </button>
+
         <div className="avatar-contenedor">
           <AvatarAnimado apariencia={personaje.apariencia} equipado={equipado} />
         </div>
@@ -105,9 +109,6 @@ export default function Personaje() {
         <p className="detalle-xp">
           {Math.round(personaje.xp_total)} XP · próximo nivel en {Math.max(0, Math.round(xpNivelSiguiente - personaje.xp_total))} XP
         </p>
-        <button className="boton-editar-personaje" onClick={() => navigate('/personaje/editar')}>
-          Editar personaje
-        </button>
       </div>
 
       {personaje.puntos_libres > 0 && (
@@ -152,21 +153,6 @@ export default function Personaje() {
         </div>
       </div>
 
-      <div className="tarjeta">
-        <h3>Equipamiento</h3>
-        {equipado.length === 0 && <p className="detalle-item">Nada equipado todavía — visitá la Tienda.</p>}
-        <div className="fila-equipamiento">
-          {equipado.map((i) => (
-            <div key={i.id} className="chip-equipamiento" title={i.item.nombre}>
-              <span className="chip-equipamiento-icono">{ICONOS_SLOT[i.item.base.category] ?? '❔'}</span>
-              <span className="chip-equipamiento-nombre">{i.item.nombre}</span>
-              {i.color && (
-                <span className="chip-equipamiento-color" style={{ backgroundColor: i.color.valor_hex }} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

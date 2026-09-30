@@ -489,8 +489,22 @@ button.activo {
   gap: 24px;
 }
 
-.boton-editar-personaje {
-  margin-top: 10px;
+.icono-cabecera {
+  position: absolute;
+  top: 8px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 6px;
+}
+
+.icono-cabecera-izq {
+  left: 4px;
+}
+
+.icono-cabecera-der {
+  right: 4px;
 }
 
 .fila-opciones-rasgo {

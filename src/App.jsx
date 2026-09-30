@@ -4,6 +4,7 @@ import NavBar from './components/NavBar'
 import { supabase } from './lib/supabaseClient'
 import EditarPersonaje from './pages/EditarPersonaje'
 import Entrenamiento from './pages/Entrenamiento'
+import Inventario from './pages/Inventario'
 import Login from './pages/Login'
 import Mapa from './pages/Mapa'
 import Personaje from './pages/Personaje'
@@ -27,6 +28,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Personaje />} />
           <Route path="/personaje/editar" element={<EditarPersonaje />} />
+          <Route path="/personaje/inventario" element={<Inventario />} />
           <Route path="/entrenamiento" element={<Entrenamiento />} />
           <Route path="/tienda" element={<Tienda />} />
           <Route path="/mapa" element={<Mapa />} />
