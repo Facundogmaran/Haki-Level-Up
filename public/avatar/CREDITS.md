@@ -23,7 +23,16 @@ https://github.com/ElizaWy/LPC/tree/main/Characters/Hair
 
 ## Assets de equipamiento (`public/avatar-equip/`)
 
-Mismo proyecto y licencias que arriba. Piezas usadas hasta ahora:
-- `arming_sword`: ElizaWy (walk/down por JaidynReiman) — https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword
-- `greathelm`: bluecarrot16 — https://opengameart.org/content/lpc-helmets
-- `longsleeve`: bluecarrot16, JaidynReiman, Stephen Challener (Redshrike), Johannes Sjölund (wulax) — https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+Mismo proyecto y licencias que arriba (recorteados/recoloreados offline
+desde `spritesheets/` del repo Universal-LPC-Spritesheet-Character-Generator,
+paletas `palette_definitions/metal` y `palette_definitions/cloth`). 31 piezas
+del catálogo tienen sprite hasta ahora: arma (espada), cascos/yelmos (armet,
+barbuta, close helm, greathelm, horned helmet, kettle helm, maximus, viking
+spangenhelm, mail), collares (simple, cadena, cuentas), hombrera, guantes,
+torso (legion, placas, cota de malla, camisa, abrigo de invierno, capa),
+piernas (grebas de placas, pantalón bombacho, falda de legión), pies (botas
+de placas, zapatos básicos, botas con puño), gorra de cuero, tricornio y
+sombrero de mago. El resto del catálogo queda sin capa visual por ahora.
+Autores principales: bluecarrot16, JaidynReiman, ElizaWy, Stephen Challener
+(Redshrike), Johannes Sjölund (wulax) — ver el repo para el detalle exacto
+por archivo.
