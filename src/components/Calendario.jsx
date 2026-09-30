@@ -10,6 +10,18 @@ function toFecha(d) {
   return d.toISOString().slice(0, 10)
 }
 
+// "Hoy" tiene que ser el día en Argentina, no en UTC -- toISOString()
+// convierte a UTC, así que antes de la medianoche ART (que son 3
+// horas menos) ya mostraba el día siguiente.
+function hoyEnArgentina() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
 function primerDiaSemana(date) {
   // Lunes = 0 ... Domingo = 6
   return (date.getDay() + 6) % 7
@@ -28,7 +40,7 @@ export default function Calendario({ fechaSeleccionada, diasConEntrenamiento = [
   const diasDelMes = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0).getDate()
   const offset = primerDiaSemana(mesActual)
   const set = new Set(diasConEntrenamiento)
-  const hoy = toFecha(new Date())
+  const hoy = hoyEnArgentina()
 
   const celdas = []
   for (let i = 0; i < offset; i++) celdas.push(null)

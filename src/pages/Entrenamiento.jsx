@@ -13,8 +13,16 @@ import {
 
 const ICONOS_HISTORIAL = { correr: '🏃', bici: '🚴', caminata: '🚶', fuerza: '🏋️', calorias: '🔥' }
 
+// El día "de hoy" tiene que ser el de Argentina, no UTC -- toISOString()
+// convierte a UTC, así que antes de la medianoche ART (3 horas menos)
+// ya mostraba el día siguiente.
 function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
 }
 
 function resumenWorkout(w) {
