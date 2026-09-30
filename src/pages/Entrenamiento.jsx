@@ -301,6 +301,7 @@ export default function Entrenamiento() {
   function repetirEntrenamiento(w) {
     setError('')
     setWorkoutEditandoId(null)
+    setFecha(hoyISO())
     setEjerciciosAgregados(agruparEjercicios(w.ejercicios))
     setDuracionFuerza('')
     setPaso('fuerza_duracion')
