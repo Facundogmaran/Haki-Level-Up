@@ -193,10 +193,18 @@ export async function registrarEntrenamiento(workout) {
   return data
 }
 
+export async function editarEntrenamiento(workoutId, workout) {
+  const { data, error } = await supabase.rpc('editar_entrenamiento', { p_workout_id: workoutId, p_workout: workout })
+  if (error) throw error
+  return data
+}
+
 export async function getWorkoutsPorFecha(fecha) {
   const { data, error } = await supabase
     .from('workouts')
-    .select('*, ejercicios:workout_exercises(peso_kg, repeticiones, exercise:exercises(nombre, muscle_group_id))')
+    .select(
+      '*, ejercicios:workout_exercises(exercise_id, peso_kg, repeticiones, exercise:exercises(nombre, muscle_group_id))',
+    )
     .eq('fecha', fecha)
     .order('created_at', { ascending: false })
   if (error) throw error

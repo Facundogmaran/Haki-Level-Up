@@ -864,6 +864,24 @@ button.activo {
   image-rendering: pixelated;
 }
 
+.lista-series {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.fila-atributo-acciones {
+  display: flex;
+  gap: 4px;
+  justify-self: end;
+}
+
+.fila-atributo-acciones button {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
 .vista-previa-equipo {
   text-align: center;
 }
