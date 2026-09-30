@@ -5,6 +5,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   APARIENCIA_POR_DEFECTO,
+  Z_POS_CUERPO,
+  capasEquipoWalk,
   rutaCabezaWalk,
   rutaCaraWalk,
   rutaCuerpoWalk,
@@ -52,7 +54,7 @@ function CapaAnimada({ src, direccion, cuadro }) {
   )
 }
 
-export default function AvatarAnimado({ apariencia, direccion: direccionControlada, arrastrable = true }) {
+export default function AvatarAnimado({ apariencia, direccion: direccionControlada, arrastrable = true, equipado = [] }) {
   const a = { ...APARIENCIA_POR_DEFECTO, ...apariencia }
   const [turno, setTurno] = useState(0) // índice dentro de ORDEN_GIRO
   const arrastre = useRef(null)
@@ -82,14 +84,15 @@ export default function AvatarAnimado({ apariencia, direccion: direccionControla
   }
 
   const capas = [
-    { src: rutaCuerpoWalk(a.skinTone, a.bodyType), key: 'cuerpo' },
-    { src: rutaCabezaWalk(a.skinTone, a.bodyType), key: 'cabeza' },
-    { src: rutaCaraWalk(a.skinTone, a.bodyType), key: 'cara' },
-    { src: rutaNarizWalk(a.skinTone), key: 'nariz' },
-    { src: rutaVelloFacialWalk(a.facialHairStyle, a.hairColor), key: 'vello' },
-    { src: rutaPeloWalk(a.hairStyle, a.hairColor), key: 'pelo' },
-    { src: rutaOrejasWalk(a.skinTone), key: 'orejas' },
-  ]
+    { src: rutaCuerpoWalk(a.skinTone, a.bodyType), key: 'cuerpo', zPos: Z_POS_CUERPO.cuerpo },
+    { src: rutaCabezaWalk(a.skinTone, a.bodyType), key: 'cabeza', zPos: Z_POS_CUERPO.cara - 1 },
+    { src: rutaCaraWalk(a.skinTone, a.bodyType), key: 'cara', zPos: Z_POS_CUERPO.cara },
+    { src: rutaNarizWalk(a.skinTone), key: 'nariz', zPos: Z_POS_CUERPO.nariz },
+    { src: rutaVelloFacialWalk(a.facialHairStyle, a.hairColor), key: 'vello', zPos: Z_POS_CUERPO.vello },
+    { src: rutaPeloWalk(a.hairStyle, a.hairColor), key: 'pelo', zPos: Z_POS_CUERPO.pelo },
+    { src: rutaOrejasWalk(a.skinTone), key: 'orejas', zPos: Z_POS_CUERPO.orejas },
+    ...capasEquipoWalk(equipado),
+  ].sort((x, y) => x.zPos - y.zPos)
 
   return (
     <div

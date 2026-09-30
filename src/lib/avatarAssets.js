@@ -105,3 +105,41 @@ export function rutaPeloWalk(hairStyle, hairColor) {
 export function rutaVelloFacialWalk(facialHairStyle, hairColor) {
   return facialHairStyle ? `/avatar-walk/facial/${hairColor}/${facialHairStyle}.png` : null
 }
+
+// zPos LPC de las capas fijas del cuerpo (mismo valor que usa el propio
+// generador Universal LPC, para que el equipo agregado dinámicamente se
+// intercale bien: un casco (zPos > 120) debe tapar el pelo, un arma
+// (zPos > 130) queda delante de todo, etc.
+export const Z_POS_CUERPO = {
+  cuerpo: 10,
+  cara: 101,
+  nariz: 105,
+  vello: 115,
+  pelo: 120,
+  orejas: 126,
+}
+
+// Ítem equipado (de getInventory/game.js) -> hasta 2 capas de sprite LPC
+// (bg detrás del cuerpo, fg delante) si ese equipamiento ya tiene su
+// carpeta generada en public/avatar-equip/. Si no la tiene, no devuelve
+// nada -- el equipo simplemente no se dibuja (igual que hasta ahora).
+export function capasEquipoWalk(itemsEquipados) {
+  const capas = []
+  for (const inv of itemsEquipados) {
+    const base = inv.item?.base
+    const carpeta = base?.lpc_sprite_folder
+    if (!carpeta) continue
+
+    const variante = inv.item.material?.nombre ?? inv.color?.nombre
+    if (!variante) continue
+
+    if (base.lpc_zpos_bg != null) {
+      capas.push({ key: `equipo-${inv.id}-bg`, zPos: base.lpc_zpos_bg, src: `/avatar-equip/${carpeta}/${variante}_bg.png` })
+    }
+    if (base.lpc_zpos_fg != null) {
+      const sufijo = base.lpc_zpos_bg != null ? '_fg' : ''
+      capas.push({ key: `equipo-${inv.id}-fg`, zPos: base.lpc_zpos_fg, src: `/avatar-equip/${carpeta}/${variante}${sufijo}.png` })
+    }
+  }
+  return capas
+}

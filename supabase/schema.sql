@@ -99,22 +99,81 @@ create table health_events (
 );
 
 -- ============================================================
--- Catálogo de equipamiento (bonus de atributos en JSON)
+-- Equipamiento: base (un ítem real) + variantes por material (cambian
+-- stats/precio/nombre) + colores disponibles (puramente visual, no
+-- se duplica en filas — se elige en tienda o se sortea en drops).
 -- ============================================================
-create table equipment_catalog (
+create table materials (
   id bigint generated always as identity primary key,
+  nombre text not null unique,
+  nombre_es text not null,
+  orden int not null,
+  multiplicador_poder numeric not null,
+  multiplicador_precio numeric not null
+);
+
+insert into materials (nombre, nombre_es, orden, multiplicador_poder, multiplicador_precio) values
+  ('copper', 'Cobre', 1, 1.0, 1.0),
+  ('iron',   'Hierro', 2, 1.5, 2.2),
+  ('steel',  'Acero', 3, 2.1, 4.0),
+  ('silver', 'Plata', 4, 2.8, 7.0),
+  ('gold',   'Oro',   5, 3.6, 12.0);
+
+create table colors (
+  id bigint generated always as identity primary key,
+  nombre text not null unique,
+  valor_hex text not null
+);
+
+insert into colors (nombre, valor_hex) values
+  ('leather',  '#8a5a34'),
+  ('maroon',   '#7c2735'),
+  ('navy',     '#243b57'),
+  ('forest',   '#2f5233'),
+  ('charcoal', '#3a3a3d'),
+  ('white',    '#e7e2d6');
+
+create table equipment_base (
+  id bigint generated always as identity primary key,
+  base_key text not null unique,
   nombre text not null,
-  slot text not null check (slot in ('cabeza','torso','arma','piernas','pies','accesorio')),
-  bonus jsonb not null default '{}'::jsonb, -- ej: {"fuerza": 2, "vitalidad": 1}
-  precio_oro numeric not null,
   descripcion text,
-  color text not null default '#8b5e34' -- con qué color se dibuja la forma genérica del slot cuando está equipado
+  category text not null check (category in ('head','neck','ring','shoulder','gloves','torso','legs','feet','weapon','shield')),
+  admite_colores boolean not null default false,
+  lpc_sprite_folder text,
+  lpc_zpos_bg int,
+  lpc_zpos_fg int
+);
+
+create table equipment_base_colores (
+  base_id bigint not null references equipment_base(id) on delete cascade,
+  color_id bigint not null references colors(id),
+  primary key (base_id, color_id)
+);
+
+create table equipment_variants (
+  id bigint generated always as identity primary key,
+  base_id bigint not null references equipment_base(id) on delete cascade,
+  material_id bigint references materials(id),
+  nombre text not null,
+  precio_oro numeric not null,
+  bonus jsonb not null default '{}'::jsonb, -- ej: {"fuerza": 2, "vitalidad": 1}
+  requisito_nivel int not null default 1,
+  requisito_fuerza int not null default 0,
+  requisito_resistencia int not null default 0,
+  requisito_agilidad int not null default 0,
+  requisito_vitalidad int not null default 0,
+  requisito_mente int not null default 0,
+  shop_disponible boolean not null default true,
+  mission_drop boolean not null default false,
+  sprite_variant_key text
 );
 
 create table inventory (
   id bigint generated always as identity primary key,
   character_id uuid not null references character(id),
-  item_id bigint not null references equipment_catalog(id),
+  item_id bigint not null references equipment_variants(id),
+  color_id bigint references colors(id),
   equipado boolean not null default false,
   adquirido_at timestamptz not null default now()
 );
@@ -125,17 +184,24 @@ returns trigger
 language plpgsql
 as $$
 declare
-  v_slot text;
+  v_category text;
 begin
   if new.equipado then
-    select slot into v_slot from equipment_catalog where id = new.item_id;
+    select eb.category into v_category
+      from equipment_variants ev
+      join equipment_base eb on eb.id = ev.base_id
+      where ev.id = new.item_id;
 
     update inventory
       set equipado = false
       where character_id = new.character_id
         and id <> new.id
         and equipado
-        and item_id in (select id from equipment_catalog where slot = v_slot);
+        and item_id in (
+          select ev.id from equipment_variants ev
+          join equipment_base eb on eb.id = ev.base_id
+          where eb.category = v_category
+        );
   end if;
   return new;
 end;
@@ -156,7 +222,8 @@ create table enemies (
   poder numeric not null,
   oro_min numeric not null,
   oro_max numeric not null,
-  loot_item_id bigint references equipment_catalog(id),
+  loot_base_id bigint references equipment_base(id),
+  loot_material_ids bigint[], -- qué materiales puede entregar esta misión (null/vacío = el único material disponible o ninguno); el color se sortea siempre entre los disponibles de la base
   loot_chance numeric not null default 0 -- 0..1, probabilidad de loot SI se gana el encuentro
 );
 
@@ -176,7 +243,7 @@ create table encounter_log (
   chance numeric not null,
   resultado boolean not null,
   oro_ganado numeric not null default 0,
-  item_ganado_id bigint references equipment_catalog(id),
+  item_ganado_id bigint references equipment_variants(id),
   created_at timestamptz not null default now()
 );
 
@@ -367,10 +434,18 @@ create policy "propio historial de encuentros" on encounter_log
   with check (character_id in (select id from character where user_id = auth.uid()));
 
 -- catálogo, zonas y enemigos son de lectura pública (no hay datos sensibles)
-alter table equipment_catalog enable row level security;
+alter table materials enable row level security;
+alter table colors enable row level security;
+alter table equipment_base enable row level security;
+alter table equipment_base_colores enable row level security;
+alter table equipment_variants enable row level security;
 alter table zones enable row level security;
 alter table enemies enable row level security;
-create policy "catalogo publico" on equipment_catalog for select using (true);
+create policy "materiales publicos" on materials for select using (true);
+create policy "colores publicos" on colors for select using (true);
+create policy "equipo base publico" on equipment_base for select using (true);
+create policy "equipo colores publico" on equipment_base_colores for select using (true);
+create policy "variantes publicas" on equipment_variants for select using (true);
 create policy "zonas publicas" on zones for select using (true);
 create policy "enemigos publicos" on enemies for select using (true);
 
@@ -395,35 +470,253 @@ create policy "propios ejercicios de entrenamiento" on workout_exercises
   ));
 
 -- ============================================================
--- Seed: catálogo de equipamiento inicial (ajustable después)
+-- Seed: catálogo de equipamiento inicial (ajustable después).
+-- 15 ítems base originales + 62 del catálogo ampliado
+-- (equipamiento_lpc_carga.xlsx): base + material (Cobre..Oro, cambia
+-- stats/precio/nombre) + colores (puramente visuales). Cobre/Hierro/
+-- Acero van a tienda; Plata/Oro y las piezas pesadas sin material
+-- (halberd, diamond staff, escudos grandes) son solo de misión.
 -- ============================================================
-insert into equipment_catalog (nombre, slot, bonus, precio_oro, descripcion, color) values
-  ('Casco de cuero',      'cabeza',    '{"vitalidad": 1}',                 20,  'Protección básica para la cabeza.', '#8b5e34'),
-  ('Yelmo de hierro',     'cabeza',    '{"vitalidad": 2, "resistencia": 1}', 60,  'Yelmo resistente forjado en hierro.', '#9aa3ad'),
-  ('Corona del sabio',    'cabeza',    '{"mente": 3}',                      90,  'Otorga claridad mental.', '#c9a24b'),
-  ('Túnica de viaje',     'torso',     '{"agilidad": 1}',                   20,  'Liviana, ideal para moverse rápido.', '#4a7a5c'),
-  ('Coraza de cuero',     'torso',     '{"resistencia": 2}',                55,  'Armadura ligera de cuero curtido.', '#8b5e34'),
-  ('Armadura de placas',  'torso',     '{"resistencia": 3, "vitalidad": 2}', 140, 'Pesada pero muy protectora.', '#7a8290'),
-  ('Daga oxidada',        'arma',      '{"agilidad": 1}',                   15,  'Vieja pero filosa.', '#7a6a55'),
-  ('Espada corta',        'arma',      '{"fuerza": 2}',                     50,  'Espada equilibrada de acero.', '#b0b8c1'),
-  ('Espadón de guerra',   'arma',      '{"fuerza": 4, "resistencia": -1}',  120, 'Golpea fuerte, cuesta manejarla.', '#8a8f99'),
-  ('Báculo arcano',       'arma',      '{"mente": 3}',                      110, 'Canaliza energía mental en combate.', '#6a4fc9'),
-  ('Grebas de cuero',     'piernas',   '{"agilidad": 1, "resistencia": 1}',  35,  'Protección liviana para las piernas.', '#8b5e34'),
-  ('Botas del viajero',   'pies',      '{"agilidad": 2}',                   40,  'Botas cómodas para largas caminatas.', '#5c4a3a'),
-  ('Botas de hierro',     'pies',      '{"resistencia": 1, "vitalidad": 1}', 45,  'Pesadas pero firmes.', '#6b7178'),
-  ('Amuleto de vitalidad','accesorio', '{"vitalidad": 2}',                  70,  'Un amuleto que fortalece el cuerpo.', '#e0637a'),
-  ('Anillo del cazador',  'accesorio', '{"agilidad": 1, "fuerza": 1}',       65,  'Favorito entre exploradores.', '#c9a24b');
+insert into equipment_base (base_key, nombre, descripcion, category) values
+  ('casco_cuero',        'Casco de cuero',       'Protección básica para la cabeza.', 'head'),
+  ('yelmo_hierro',       'Yelmo de hierro',      'Yelmo resistente forjado en hierro.', 'head'),
+  ('corona_sabio',       'Corona del sabio',     'Otorga claridad mental.', 'head'),
+  ('tunica_viaje',       'Túnica de viaje',      'Liviana, ideal para moverse rápido.', 'torso'),
+  ('coraza_cuero',       'Coraza de cuero',      'Armadura ligera de cuero curtido.', 'torso'),
+  ('armadura_placas_basica', 'Armadura de placas', 'Pesada pero muy protectora.', 'torso'),
+  ('daga_oxidada',       'Daga oxidada',         'Vieja pero filosa.', 'weapon'),
+  ('espada_corta',       'Espada corta',         'Espada equilibrada de acero.', 'weapon'),
+  ('espadon_guerra',     'Espadón de guerra',    'Golpea fuerte, cuesta manejarla.', 'weapon'),
+  ('baculo_arcano',      'Báculo arcano',        'Canaliza energía mental en combate.', 'weapon'),
+  ('grebas_cuero',       'Grebas de cuero',      'Protección liviana para las piernas.', 'legs'),
+  ('botas_viajero',      'Botas del viajero',    'Botas cómodas para largas caminatas.', 'feet'),
+  ('botas_hierro',       'Botas de hierro',      'Pesadas pero firmes.', 'feet'),
+  ('amuleto_vitalidad',  'Amuleto de vitalidad', 'Un amuleto que fortalece el cuerpo.', 'neck'),
+  ('anillo_cazador',     'Anillo del cazador',   'Favorito entre exploradores.', 'ring');
+
+insert into equipment_variants (base_id, material_id, nombre, precio_oro, bonus, shop_disponible, mission_drop)
+select b.id, null, cfg.nombre, cfg.precio, cfg.bonus, true, false
+from (values
+  ('casco_cuero',            'Casco de cuero',       20,  '{"vitalidad": 1}'::jsonb),
+  ('yelmo_hierro',           'Yelmo de hierro',      60,  '{"vitalidad": 2, "resistencia": 1}'::jsonb),
+  ('corona_sabio',           'Corona del sabio',     90,  '{"mente": 3}'::jsonb),
+  ('tunica_viaje',           'Túnica de viaje',      20,  '{"agilidad": 1}'::jsonb),
+  ('coraza_cuero',           'Coraza de cuero',      55,  '{"resistencia": 2}'::jsonb),
+  ('armadura_placas_basica', 'Armadura de placas',   140, '{"resistencia": 3, "vitalidad": 2}'::jsonb),
+  ('daga_oxidada',           'Daga oxidada',         15,  '{"agilidad": 1}'::jsonb),
+  ('espada_corta',           'Espada corta',         50,  '{"fuerza": 2}'::jsonb),
+  ('espadon_guerra',         'Espadón de guerra',    120, '{"fuerza": 4, "resistencia": -1}'::jsonb),
+  ('baculo_arcano',          'Báculo arcano',        110, '{"mente": 3}'::jsonb),
+  ('grebas_cuero',           'Grebas de cuero',      35,  '{"agilidad": 1, "resistencia": 1}'::jsonb),
+  ('botas_viajero',          'Botas del viajero',    40,  '{"agilidad": 2}'::jsonb),
+  ('botas_hierro',           'Botas de hierro',      45,  '{"resistencia": 1, "vitalidad": 1}'::jsonb),
+  ('amuleto_vitalidad',      'Amuleto de vitalidad', 70,  '{"vitalidad": 2}'::jsonb),
+  ('anillo_cazador',         'Anillo del cazador',   65,  '{"agilidad": 1, "fuerza": 1}'::jsonb)
+) as cfg(base_key, nombre, precio, bonus)
+join equipment_base b on b.base_key = cfg.base_key;
+
+-- --- Catálogo ampliado: bases con materiales (20)
+insert into equipment_base (base_key, nombre, descripcion, category) values
+  ('mail_head',            'Capucha de malla',    'Capucha tejida en anillos metálicos.', 'head'),
+  ('armet',                'Yelmo Armet',          'Yelmo cerrado de forma redondeada.', 'head'),
+  ('barbuta',               'Barbuta',              'Casco con visión en forma de T.', 'head'),
+  ('close_helm',            'Yelmo cerrado',        'Protección total para la cabeza.', 'head'),
+  ('greathelm',             'Gran yelmo',           'Yelmo pesado de caballería.', 'head'),
+  ('horned_helmet',         'Casco con cuernos',    'Intimidante casco ornamentado.', 'head'),
+  ('maximus',               'Yelmo Máximus',        'Yelmo de líneas clásicas.', 'head'),
+  ('kettle_helm',           'Casco de caldero',     'Casco simple de ala ancha.', 'head'),
+  ('viking_spangenhelm',    'Casco vikingo',        'Casco forjado en placas remachadas.', 'head'),
+  ('simple_necklace',       'Collar simple',        'Un collar liso.', 'neck'),
+  ('chain_necklace',        'Collar de cadena',     'Cadena entrelazada.', 'neck'),
+  ('beaded_necklace',       'Collar de cuentas',    'Collar grande de cuentas.', 'neck'),
+  ('shoulder_armour',       'Hombrera',             'Protección articulada para el hombro.', 'shoulder'),
+  ('gloves',                'Guantes',              'Guantes de combate.', 'gloves'),
+  ('legion_armour',         'Armadura de legionario', 'Coraza segmentada de infantería.', 'torso'),
+  ('plate_armour',          'Placas forjadas',      'Armadura de placas completa.', 'torso'),
+  ('chainmail',             'Cota de malla',        'Malla metálica flexible.', 'torso'),
+  ('legs_armour',           'Grebas de placas',     'Protección de placas para las piernas.', 'legs'),
+  ('feet_armour',           'Botas de placas',      'Calzado blindado.', 'feet'),
+  ('arming_sword',          'Espada',               'Espada equilibrada de una mano.', 'weapon');
+
+insert into equipment_variants (base_id, material_id, nombre, precio_oro, bonus, requisito_nivel, requisito_fuerza, requisito_resistencia, requisito_agilidad, requisito_vitalidad, requisito_mente, shop_disponible, mission_drop)
+select b.id, m.id,
+  b.nombre || ' de ' || m.nombre_es,
+  round(cfg.precio * m.multiplicador_precio),
+  (select jsonb_object_agg(key, round((value::numeric) * m.multiplicador_poder))
+     from jsonb_each_text(cfg.bonus) as kv(key, value)),
+  case m.nombre when 'silver' then 10 when 'gold' then 18 else 1 end,
+  case when cfg.atributo = 'fuerza' then (case m.nombre when 'silver' then 25 when 'gold' then 40 else 0 end) else 0 end,
+  case when cfg.atributo = 'resistencia' then (case m.nombre when 'silver' then 25 when 'gold' then 40 else 0 end) else 0 end,
+  case when cfg.atributo = 'agilidad' then (case m.nombre when 'silver' then 25 when 'gold' then 40 else 0 end) else 0 end,
+  case when cfg.atributo = 'vitalidad' then (case m.nombre when 'silver' then 25 when 'gold' then 40 else 0 end) else 0 end,
+  case when cfg.atributo = 'mente' then (case m.nombre when 'silver' then 25 when 'gold' then 40 else 0 end) else 0 end,
+  m.nombre in ('copper','iron','steel'),
+  m.nombre in ('silver','gold')
+from materials m
+cross join (values
+  ('mail_head',        40,  '{"vitalidad": 1}'::jsonb,                    'vitalidad'),
+  ('armet',            55,  '{"resistencia": 1, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('barbuta',          55,  '{"resistencia": 1, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('close_helm',       60,  '{"resistencia": 2}'::jsonb,                  'resistencia'),
+  ('greathelm',        70,  '{"resistencia": 2, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('horned_helmet',    60,  '{"fuerza": 1, "resistencia": 1}'::jsonb,     'resistencia'),
+  ('maximus',          65,  '{"resistencia": 2}'::jsonb,                  'resistencia'),
+  ('kettle_helm',      50,  '{"resistencia": 1, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('viking_spangenhelm', 60, '{"resistencia": 1, "fuerza": 1}'::jsonb,    'resistencia'),
+  ('simple_necklace',  35,  '{"mente": 1}'::jsonb,                        'mente'),
+  ('chain_necklace',   45,  '{"mente": 1, "vitalidad": 1}'::jsonb,        'mente'),
+  ('beaded_necklace',  40,  '{"mente": 2}'::jsonb,                        'mente'),
+  ('shoulder_armour',  50,  '{"resistencia": 2}'::jsonb,                  'resistencia'),
+  ('gloves',           40,  '{"fuerza": 1, "agilidad": 1}'::jsonb,        'fuerza'),
+  ('legion_armour',    65,  '{"resistencia": 2, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('plate_armour',     80,  '{"resistencia": 3, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('chainmail',        70,  '{"resistencia": 2, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('legs_armour',      55,  '{"resistencia": 2}'::jsonb,                  'resistencia'),
+  ('feet_armour',      45,  '{"resistencia": 1, "vitalidad": 1}'::jsonb,  'resistencia'),
+  ('arming_sword',     50,  '{"fuerza": 3}'::jsonb,                       'fuerza')
+) as cfg(base_key, precio, bonus, atributo)
+join equipment_base b on b.base_key = cfg.base_key;
+
+-- --- Catálogo ampliado: bases con colores (11)
+insert into equipment_base (base_key, nombre, descripcion, category, admite_colores) values
+  ('hood',              'Capucha',                  'Capucha liviana de tela.', 'head', true),
+  ('leather_cap',       'Gorra de cuero',           'Gorra sencilla de cuero curtido.', 'head', true),
+  ('tricorne',          'Tricornio',                'Sombrero de tres puntas.', 'head', true),
+  ('wizard_hat',        'Sombrero de mago',         'Sombrero puntiagudo encantado.', 'head', true),
+  ('longsleeve',        'Camisa de mangas largas',  'Camisa cómoda de tela.', 'torso', true),
+  ('winter_coat',       'Abrigo de invierno',       'Abrigo pesado con ribetes.', 'torso', true),
+  ('cape',              'Capa',                     'Capa larga de tela.', 'torso', true),
+  ('pantaloons',        'Pantalón bombacho',        'Pantalón amplio y cómodo.', 'legs', true),
+  ('legion_skirt',      'Falda de legionario',      'Falda protectora de tiras.', 'legs', true),
+  ('basic_shoes',       'Zapatos básicos',          'Calzado simple de tela.', 'feet', true),
+  ('folded_rim_boots',  'Botas con puño',           'Botas con puño doblado.', 'feet', true);
+
+insert into equipment_variants (base_id, material_id, nombre, precio_oro, bonus, shop_disponible, mission_drop)
+select b.id, null, cfg.nombre, cfg.precio, cfg.bonus, true, false
+from (values
+  ('hood',             'Capucha',                  25, '{"agilidad": 1}'::jsonb),
+  ('leather_cap',      'Gorra de cuero',           20, '{"vitalidad": 1}'::jsonb),
+  ('tricorne',         'Tricornio',                30, '{"mente": 1}'::jsonb),
+  ('wizard_hat',       'Sombrero de mago',         60, '{"mente": 2}'::jsonb),
+  ('longsleeve',       'Camisa de mangas largas',  25, '{"agilidad": 1}'::jsonb),
+  ('winter_coat',      'Abrigo de invierno',       35, '{"vitalidad": 1, "resistencia": 1}'::jsonb),
+  ('cape',             'Capa',                     30, '{"agilidad": 1, "mente": 1}'::jsonb),
+  ('pantaloons',       'Pantalón bombacho',        22, '{"agilidad": 1}'::jsonb),
+  ('legion_skirt',     'Falda de legionario',      28, '{"resistencia": 1}'::jsonb),
+  ('basic_shoes',      'Zapatos básicos',          18, '{"agilidad": 1}'::jsonb),
+  ('folded_rim_boots', 'Botas con puño',           32, '{"agilidad": 2}'::jsonb)
+) as cfg(base_key, nombre, precio, bonus)
+join equipment_base b on b.base_key = cfg.base_key;
+
+insert into equipment_base_colores (base_id, color_id)
+select b.id, c.id
+from equipment_base b
+join colors c on true
+where b.base_key in ('hood','longsleeve','winter_coat','cape','pantaloons','legion_skirt','basic_shoes','folded_rim_boots');
+
+insert into equipment_base_colores (base_id, color_id)
+select b.id, c.id
+from equipment_base b
+join colors c on c.nombre in ('leather','charcoal')
+where b.base_key in ('leather_cap','tricorne');
+
+insert into equipment_base_colores (base_id, color_id)
+select b.id, c.id
+from equipment_base b
+join colors c on c.nombre in ('white','forest','maroon')
+where b.base_key = 'wizard_hat';
+
+-- Primer lote con capa visible sobre el personaje (arma, casco, torso);
+-- el resto del catálogo queda sin lpc_sprite_folder por ahora.
+update equipment_base set lpc_sprite_folder = 'arming_sword', lpc_zpos_bg = 9, lpc_zpos_fg = 140
+  where base_key = 'arming_sword';
+update equipment_base set lpc_sprite_folder = 'greathelm', lpc_zpos_fg = 130
+  where base_key = 'greathelm';
+update equipment_base set lpc_sprite_folder = 'longsleeve', lpc_zpos_fg = 35
+  where base_key = 'longsleeve';
+
+-- --- Catálogo ampliado: bases sin variantes (31)
+insert into equipment_base (base_key, nombre, descripcion, category) values
+  ('ring_gem',            'Anillo con gema',      'Anillo simple con una gema engarzada.', 'ring'),
+  ('leather_vest',        'Chaleco de cuero',     'Chaleco liviano de cuero.', 'torso'),
+  ('sandals',             'Sandalias',            'Calzado abierto y liviano.', 'feet'),
+  ('axe_tool',            'Hacha de guerra',      'Hacha pesada de combate.', 'weapon'),
+  ('hammer_tool',         'Martillo de guerra',   'Martillo contundente.', 'weapon'),
+  ('pickaxe_tool',        'Pico de minero',       'Pico reconvertido en arma.', 'weapon'),
+  ('whip_tool',           'Látigo',               'Arma flexible de alcance.', 'weapon'),
+  ('crusader_shield',     'Escudo cruzado',       'Escudo con emblema de cruz.', 'shield'),
+  ('plus_shield',         'Escudo con cruz',      'Escudo reforzado con travesaños.', 'shield'),
+  ('two_engrailed_shield','Escudo doble filo',    'Escudo de borde ondulado.', 'shield'),
+  ('scutum_shield',       'Escudo scutum',        'Gran escudo rectangular de legión.', 'shield'),
+  ('round_shield',        'Escudo redondo',       'Escudo pequeño y maniobrable.', 'shield'),
+  ('kite_shield',         'Escudo de cometa',     'Gran escudo en forma de cometa.', 'shield'),
+  ('spartan_shield',      'Escudo espartano',     'Escudo ceremonial de guerra.', 'shield'),
+  ('dagger',              'Daga',                 'Arma corta y rápida.', 'weapon'),
+  ('katana',              'Katana',               'Espada curva de filo único.', 'weapon'),
+  ('longsword_w',         'Espada larga',         'Espada de dos manos.', 'weapon'),
+  ('rapier',              'Estoque',              'Espada fina de estocada.', 'weapon'),
+  ('saber',                'Sable',                'Espada curva de caballería.', 'weapon'),
+  ('scimitar',             'Cimitarra',            'Espada curva ligera.', 'weapon'),
+  ('club',                 'Garrote',              'Arma contundente simple.', 'weapon'),
+  ('flail',                'Mangual',              'Arma articulada con cadena.', 'weapon'),
+  ('mace',                 'Maza',                 'Arma contundente pesada.', 'weapon'),
+  ('waraxe',               'Hacha de batalla',     'Hacha de doble filo.', 'weapon'),
+  ('halberd',              'Alabarda',             'Arma de asta de largo alcance.', 'weapon'),
+  ('spear_dark',           'Lanza oscura',         'Lanza forjada en metal oscuro.', 'weapon'),
+  ('simple_staff',         'Bastón simple',        'Bastón canalizador básico.', 'weapon'),
+  ('s_staff_dark',         'Bastón en S',          'Bastón tallado en espiral.', 'weapon'),
+  ('diamond_staff_dark',   'Bastón de diamante',   'Bastón rematado en un diamante.', 'weapon'),
+  ('gnarled_staff_dark',   'Bastón nudoso',        'Bastón de madera retorcida.', 'weapon'),
+  ('loop_staff_dark',      'Bastón de aro',        'Bastón rematado en un aro.', 'weapon');
+
+insert into equipment_variants (base_id, material_id, nombre, precio_oro, bonus, requisito_nivel, requisito_fuerza, requisito_resistencia, requisito_agilidad, requisito_vitalidad, requisito_mente, shop_disponible, mission_drop)
+select b.id, null, cfg.nombre, cfg.precio, cfg.bonus, cfg.req_nivel, cfg.req_fuerza, cfg.req_resistencia, 0, cfg.req_vitalidad, cfg.req_mente, cfg.shop, cfg.mision
+from (values
+  ('ring_gem',             'Anillo con gema',    60,  '{"fuerza": 1, "agilidad": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('leather_vest',         'Chaleco de cuero',   30,  '{"resistencia": 1}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
+  ('sandals',              'Sandalias',          15,  '{"agilidad": 1}'::jsonb,                          1,  0,  0, 0, 0, true,  false),
+  ('axe_tool',             'Hacha de guerra',    55,  '{"fuerza": 2}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
+  ('hammer_tool',          'Martillo de guerra', 60,  '{"fuerza": 2, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
+  ('pickaxe_tool',         'Pico de minero',     50,  '{"fuerza": 2}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
+  ('whip_tool',            'Látigo',             45,  '{"agilidad": 2}'::jsonb,                          1,  0,  0, 0, 0, true,  false),
+  ('crusader_shield',      'Escudo cruzado',     55,  '{"resistencia": 2}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
+  ('plus_shield',          'Escudo con cruz',    50,  '{"resistencia": 2}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
+  ('two_engrailed_shield', 'Escudo doble filo',  60,  '{"resistencia": 2, "vitalidad": 1}'::jsonb,       1,  0,  0, 0, 0, true,  false),
+  ('scutum_shield',        'Escudo scutum',      65,  '{"resistencia": 3}'::jsonb,                       1,  0,  0, 0, 0, true,  false),
+  ('round_shield',         'Escudo redondo',     45,  '{"resistencia": 1, "agilidad": 1}'::jsonb,        1,  0,  0, 0, 0, true,  false),
+  ('kite_shield',          'Escudo de cometa',   120, '{"resistencia": 4, "vitalidad": 2}'::jsonb,       12, 0, 30, 0, 0, false, true),
+  ('spartan_shield',       'Escudo espartano',   130, '{"resistencia": 4, "fuerza": 1}'::jsonb,          14, 0, 32, 0, 0, false, true),
+  ('dagger',               'Daga',               40,  '{"agilidad": 2, "fuerza": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('katana',               'Katana',             95,  '{"fuerza": 2, "agilidad": 2}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('longsword_w',          'Espada larga',       90,  '{"fuerza": 3}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
+  ('rapier',               'Estoque',            70,  '{"agilidad": 2, "fuerza": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('saber',                'Sable',              75,  '{"fuerza": 2, "agilidad": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('scimitar',             'Cimitarra',          70,  '{"fuerza": 2, "agilidad": 1}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('club',                 'Garrote',            35,  '{"fuerza": 1}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
+  ('flail',                'Mangual',            85,  '{"fuerza": 3, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
+  ('mace',                 'Maza',               80,  '{"fuerza": 3}'::jsonb,                            1,  0,  0, 0, 0, true,  false),
+  ('waraxe',               'Hacha de batalla',   90,  '{"fuerza": 3, "resistencia": -1}'::jsonb,         1,  0,  0, 0, 0, true,  false),
+  ('halberd',              'Alabarda',           160, '{"fuerza": 4, "resistencia": 2}'::jsonb,          16, 35, 0, 0, 0, false, true),
+  ('spear_dark',           'Lanza oscura',       85,  '{"fuerza": 2, "agilidad": 2}'::jsonb,             1,  0,  0, 0, 0, true,  false),
+  ('simple_staff',         'Bastón simple',      55,  '{"mente": 2}'::jsonb,                             1,  0,  0, 0, 0, true,  false),
+  ('s_staff_dark',         'Bastón en S',        80,  '{"mente": 3}'::jsonb,                             1,  0,  0, 0, 0, true,  false),
+  ('diamond_staff_dark',   'Bastón de diamante', 170, '{"mente": 5}'::jsonb,                             16, 0,  0, 0, 35, false, true),
+  ('gnarled_staff_dark',   'Bastón nudoso',      75,  '{"mente": 3}'::jsonb,                             1,  0,  0, 0, 0, true,  false),
+  ('loop_staff_dark',      'Bastón de aro',      78,  '{"mente": 3}'::jsonb,                             1,  0,  0, 0, 0, true,  false)
+) as cfg(base_key, nombre, precio, bonus, req_nivel, req_fuerza, req_resistencia, req_vitalidad, req_mente, shop, mision)
+join equipment_base b on b.base_key = cfg.base_key;
 
 -- ============================================================
 -- Seed: enemigos y zonas iniciales (árbol de 3 niveles de ejemplo)
 -- ============================================================
-insert into enemies (nombre, poder, oro_min, oro_max, loot_item_id, loot_chance) values
-  ('Jabalí salvaje',      8,  5,  15, null, 0),
-  ('Bandido del camino',  14, 10, 25, (select id from equipment_catalog where nombre = 'Daga oxidada'), 0.2),
-  ('Lobo del bosque',     20, 15, 30, null, 0),
-  ('Orco explorador',     30, 25, 45, (select id from equipment_catalog where nombre = 'Espada corta'), 0.25),
-  ('Orco guerrero',       45, 35, 60, (select id from equipment_catalog where nombre = 'Coraza de cuero'), 0.2),
-  ('Capitán orco',        65, 50, 90, (select id from equipment_catalog where nombre = 'Armadura de placas'), 0.15);
+insert into enemies (nombre, poder, oro_min, oro_max, loot_base_id, loot_material_ids, loot_chance) values
+  ('Jabalí salvaje',      8,  5,  15, (select id from equipment_base where base_key = 'hood'), null, 0.15),
+  ('Bandido del camino',  14, 10, 25, (select id from equipment_base where base_key = 'daga_oxidada'), null, 0.2),
+  ('Lobo del bosque',     20, 15, 30, (select id from equipment_base where base_key = 'arming_sword'),
+    array[(select id from materials where nombre = 'copper'), (select id from materials where nombre = 'iron')], 0.15),
+  ('Orco explorador',     30, 25, 45, (select id from equipment_base where base_key = 'espada_corta'), null, 0.25),
+  ('Orco guerrero',       45, 35, 60, (select id from equipment_base where base_key = 'coraza_cuero'), null, 0.2),
+  ('Capitán orco',        65, 50, 90, (select id from equipment_base where base_key = 'armadura_placas_basica'), null, 0.15);
 
 insert into zones (nombre, zona_padre_id, orden, enemigo_id, requisito_nivel) values
   ('Bosque Lindero', null, 1, (select id from enemies where nombre = 'Jabalí salvaje'), 1);
@@ -483,9 +776,10 @@ $$;
 grant execute on function asignar_punto(text) to authenticated;
 
 -- ============================================================
--- RPC: comprar un ítem del catálogo con oro
+-- RPC: comprar una variante de equipamiento con oro (y color si
+-- la base lo admite)
 -- ============================================================
-create or replace function comprar_item(p_item_id bigint)
+create or replace function comprar_item(p_variant_id bigint, p_color_id bigint default null)
 returns void
 language plpgsql
 security definer
@@ -495,27 +789,106 @@ declare
   v_character_id uuid;
   v_precio numeric;
   v_oro numeric;
+  v_shop_disponible boolean;
+  v_admite_colores boolean;
+  v_base_id bigint;
 begin
   select id, oro into v_character_id, v_oro from character where user_id = auth.uid();
   if v_character_id is null then
     raise exception 'personaje no encontrado';
   end if;
 
-  select precio_oro into v_precio from equipment_catalog where id = p_item_id;
+  select ev.precio_oro, ev.shop_disponible, eb.admite_colores, eb.id
+    into v_precio, v_shop_disponible, v_admite_colores, v_base_id
+    from equipment_variants ev
+    join equipment_base eb on eb.id = ev.base_id
+    where ev.id = p_variant_id;
+
   if v_precio is null then
     raise exception 'item no encontrado';
   end if;
-
+  if not v_shop_disponible then
+    raise exception 'este ítem no está disponible en la tienda';
+  end if;
+  if v_admite_colores and p_color_id is null then
+    raise exception 'elegí un color antes de comprar';
+  end if;
+  if not v_admite_colores then
+    p_color_id := null;
+  end if;
+  if p_color_id is not null and not exists (
+    select 1 from equipment_base_colores where base_id = v_base_id and color_id = p_color_id
+  ) then
+    raise exception 'color no disponible para este ítem';
+  end if;
   if v_oro < v_precio then
     raise exception 'oro insuficiente';
   end if;
 
   update character set oro = oro - v_precio where id = v_character_id;
-  insert into inventory (character_id, item_id) values (v_character_id, p_item_id);
+  insert into inventory (character_id, item_id, color_id) values (v_character_id, p_variant_id, p_color_id);
 end;
 $$;
 
-grant execute on function comprar_item(bigint) to authenticated;
+grant execute on function comprar_item(bigint, bigint) to authenticated;
+
+-- ============================================================
+-- RPC: equipar un ítem del inventario, validando requisitos de
+-- nivel/atributos (si no cumple, devuelve el detalle de qué falta)
+-- ============================================================
+create or replace function equipar_item(p_inventory_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_character character%rowtype;
+  v_variant equipment_variants%rowtype;
+  v_faltantes text[] := '{}';
+begin
+  select * into v_character from character where user_id = auth.uid();
+  if v_character.id is null then
+    raise exception 'personaje no encontrado';
+  end if;
+
+  select ev.* into v_variant
+    from inventory inv
+    join equipment_variants ev on ev.id = inv.item_id
+    where inv.id = p_inventory_id and inv.character_id = v_character.id;
+
+  if v_variant.id is null then
+    raise exception 'ítem no encontrado en tu inventario';
+  end if;
+
+  if v_character.nivel < v_variant.requisito_nivel then
+    v_faltantes := array_append(v_faltantes, format('Nivel +%s', v_variant.requisito_nivel - v_character.nivel));
+  end if;
+  if v_character.fuerza < v_variant.requisito_fuerza then
+    v_faltantes := array_append(v_faltantes, format('Fuerza +%s', v_variant.requisito_fuerza - v_character.fuerza));
+  end if;
+  if v_character.resistencia < v_variant.requisito_resistencia then
+    v_faltantes := array_append(v_faltantes, format('Resistencia +%s', v_variant.requisito_resistencia - v_character.resistencia));
+  end if;
+  if v_character.agilidad < v_variant.requisito_agilidad then
+    v_faltantes := array_append(v_faltantes, format('Agilidad +%s', v_variant.requisito_agilidad - v_character.agilidad));
+  end if;
+  if v_character.vitalidad < v_variant.requisito_vitalidad then
+    v_faltantes := array_append(v_faltantes, format('Vitalidad +%s', v_variant.requisito_vitalidad - v_character.vitalidad));
+  end if;
+  if v_character.mente < v_variant.requisito_mente then
+    v_faltantes := array_append(v_faltantes, format('Mente +%s', v_variant.requisito_mente - v_character.mente));
+  end if;
+
+  if array_length(v_faltantes, 1) > 0 then
+    raise exception 'no cumplís los requisitos para equipar esto: %', array_to_string(v_faltantes, ', ');
+  end if;
+
+  update inventory set equipado = true where id = p_inventory_id and character_id = v_character.id;
+end;
+$$;
+
+grant execute on function equipar_item(bigint) to authenticated;
 
 -- ============================================================
 -- RPC: vender un ítem del inventario por una fracción de su precio
@@ -540,10 +913,10 @@ begin
     raise exception 'personaje no encontrado';
   end if;
 
-  select inv.item_id, ec.precio_oro, ec.nombre
+  select inv.item_id, ev.precio_oro, ev.nombre
     into v_item_id, v_precio, v_nombre
     from inventory inv
-    join equipment_catalog ec on ec.id = inv.item_id
+    join equipment_variants ev on ev.id = inv.item_id
     where inv.id = p_inventory_id and inv.character_id = v_character_id;
 
   if v_item_id is null then
@@ -594,8 +967,8 @@ begin
 
   select coalesce(sum(kv.value::numeric), 0) into v_bonus_equipo
   from inventory inv
-  join equipment_catalog ec on ec.id = inv.item_id
-  cross join lateral jsonb_each_text(ec.bonus) as kv(key, value)
+  join equipment_variants ev on ev.id = inv.item_id
+  cross join lateral jsonb_each_text(ev.bonus) as kv(key, value)
   where inv.character_id = p_character_id and inv.equipado;
 
   select fuerza + resistencia + agilidad + vitalidad + mente + v_bonus_equipo
@@ -725,6 +1098,8 @@ declare
   v_item_perdido_slot text := null;
   v_inventory_perdido_id bigint;
   v_chance_perder_item numeric;
+  v_material_id bigint;
+  v_color_id bigint;
 begin
   select * into v_character from character where user_id = auth.uid();
   if v_character.id is null then
@@ -759,9 +1134,27 @@ begin
     v_oro_ganado := round(v_enemigo.oro_min + random() * (v_enemigo.oro_max - v_enemigo.oro_min));
     update character set oro = oro + v_oro_ganado where id = v_character.id;
 
-    if v_enemigo.loot_item_id is not null and random() < v_enemigo.loot_chance then
-      v_item_ganado := v_enemigo.loot_item_id;
-      insert into inventory (character_id, item_id) values (v_character.id, v_item_ganado);
+    if v_enemigo.loot_base_id is not null and random() < v_enemigo.loot_chance then
+      v_material_id := null;
+      if v_enemigo.loot_material_ids is not null and array_length(v_enemigo.loot_material_ids, 1) > 0 then
+        v_material_id := v_enemigo.loot_material_ids[1 + floor(random() * array_length(v_enemigo.loot_material_ids, 1))::int];
+      end if;
+
+      select id into v_item_ganado from equipment_variants
+        where base_id = v_enemigo.loot_base_id
+          and ((material_id = v_material_id) or (material_id is null and v_material_id is null))
+        limit 1;
+
+      v_color_id := null;
+      if exists (select 1 from equipment_base where id = v_enemigo.loot_base_id and admite_colores) then
+        select id into v_color_id from equipment_base_colores
+          where base_id = v_enemigo.loot_base_id
+          order by random() limit 1;
+      end if;
+
+      if v_item_ganado is not null then
+        insert into inventory (character_id, item_id, color_id) values (v_character.id, v_item_ganado, v_color_id);
+      end if;
     end if;
   else
     v_oro_perdido := least(v_character.oro, round(random() * v_enemigo.oro_min));
@@ -771,10 +1164,11 @@ begin
 
     select valor into v_chance_perder_item from game_config where clave = 'chance_perder_item_al_fallar';
     if random() < v_chance_perder_item then
-      select inv.id, inv.item_id, ec.nombre, ec.slot
+      select inv.id, inv.item_id, ev.nombre, eb.category
         into v_inventory_perdido_id, v_item_perdido_id, v_item_perdido_nombre, v_item_perdido_slot
         from inventory inv
-        join equipment_catalog ec on ec.id = inv.item_id
+        join equipment_variants ev on ev.id = inv.item_id
+        join equipment_base eb on eb.id = ev.base_id
         where inv.character_id = v_character.id and inv.equipado
         order by random()
         limit 1;

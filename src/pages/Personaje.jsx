@@ -19,12 +19,16 @@ const NOMBRES = {
 }
 
 const ICONOS_SLOT = {
-  cabeza: '🎩',
+  head: '🪖',
+  neck: '📿',
+  ring: '💍',
+  shoulder: '🛡️',
+  gloves: '🧤',
   torso: '👕',
-  arma: '⚔️',
-  piernas: '👖',
-  pies: '👟',
-  accesorio: '💍',
+  legs: '👖',
+  feet: '👟',
+  weapon: '⚔️',
+  shield: '🛡️',
 }
 
 export default function Personaje() {
@@ -75,7 +79,7 @@ export default function Personaje() {
     <div className="pagina">
       <div className="tarjeta encabezado-personaje">
         <div className="avatar-contenedor">
-          <AvatarAnimado apariencia={personaje.apariencia} />
+          <AvatarAnimado apariencia={personaje.apariencia} equipado={equipado} />
         </div>
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
@@ -132,8 +136,11 @@ export default function Personaje() {
         <div className="fila-equipamiento">
           {equipado.map((i) => (
             <div key={i.id} className="chip-equipamiento" title={i.item.nombre}>
-              <span className="chip-equipamiento-icono">{ICONOS_SLOT[i.item.slot] ?? '❔'}</span>
+              <span className="chip-equipamiento-icono">{ICONOS_SLOT[i.item.base.category] ?? '❔'}</span>
               <span className="chip-equipamiento-nombre">{i.item.nombre}</span>
+              {i.color && (
+                <span className="chip-equipamiento-color" style={{ backgroundColor: i.color.valor_hex }} />
+              )}
             </div>
           ))}
         </div>

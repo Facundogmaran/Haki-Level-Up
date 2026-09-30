@@ -20,3 +20,10 @@ https://opengameart.org/content/lpc-character-bases ,
 https://opengameart.org/content/lpc-hair ,
 https://opengameart.org/content/lpc-expanded-hair ,
 https://github.com/ElizaWy/LPC/tree/main/Characters/Hair
+
+## Assets de equipamiento (`public/avatar-equip/`)
+
+Mismo proyecto y licencias que arriba. Piezas usadas hasta ahora:
+- `arming_sword`: ElizaWy (walk/down por JaidynReiman) — https://github.com/ElizaWy/LPC/tree/main/Characters/Props/Sword%2001%20-%20Arming%20Sword
+- `greathelm`: bluecarrot16 — https://opengameart.org/content/lpc-helmets
+- `longsleeve`: bluecarrot16, JaidynReiman, Stephen Challener (Redshrike), Johannes Sjölund (wulax) — https://opengameart.org/content/lpc-medieval-fantasy-character-sprites

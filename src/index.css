@@ -768,3 +768,81 @@ button.activo {
   font-weight: 600;
   padding: 12px;
 }
+
+.grid-categorias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.tarjeta-categoria {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.tarjeta-categoria-icono {
+  font-size: 1.8rem;
+}
+
+.tarjeta-categoria-nombre {
+  font-weight: 600;
+}
+
+.tarjeta-categoria-conteo {
+  font-size: 0.75rem;
+  color: var(--texto-tenue);
+}
+
+.boton-volver {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--texto-tenue);
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+
+.item-catalogo-boton {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.selector-color {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fila-swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--borde);
+  padding: 0;
+}
+
+.swatch-elegido {
+  border-color: var(--oro);
+}
+
+.chip-equipamiento-color {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid var(--borde);
+}

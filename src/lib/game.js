@@ -12,7 +12,7 @@ export function xpRequeridaParaNivel(nivel, xpBase = 100, xpExponente = 1.5) {
   return xpBase * Math.pow(Math.max(0, nivel - 1), xpExponente)
 }
 
-// Suma los bonus de atributo (jsonb en equipment_catalog, ej. {"fuerza": 2})
+// Suma los bonus de atributo (jsonb en equipment_variants, ej. {"fuerza": 2})
 // de una lista de ítems de inventario equipados. El resultado se suma al
 // atributo base del personaje para mostrar el valor efectivo — la misma
 // cuenta que ya usa calcular_chance_encuentro() del lado del servidor.
@@ -36,23 +36,72 @@ export async function actualizarApariencia(characterId, apariencia) {
   if (error) throw error
 }
 
-export async function getEquipmentCatalog() {
-  const { data, error } = await supabase.from('equipment_catalog').select('*').order('slot')
+const CATEGORIAS = [
+  { id: 'head', nombre: 'Cabeza', icono: '🪖' },
+  { id: 'neck', nombre: 'Collar', icono: '📿' },
+  { id: 'ring', nombre: 'Anillo', icono: '💍' },
+  { id: 'shoulder', nombre: 'Hombrera', icono: '🛡️' },
+  { id: 'gloves', nombre: 'Guantes', icono: '🧤' },
+  { id: 'torso', nombre: 'Torso', icono: '👕' },
+  { id: 'legs', nombre: 'Piernas', icono: '👖' },
+  { id: 'feet', nombre: 'Calzado', icono: '👟' },
+  { id: 'weapon', nombre: 'Arma', icono: '⚔️' },
+  { id: 'shield', nombre: 'Escudo', icono: '🛡️' },
+]
+
+export function getCategoriasEquipo() {
+  return CATEGORIAS
+}
+
+// Cuántas bases de esa categoría tienen al menos una variante comprable
+// en la tienda (para el contador "N disponibles" del menú inicial).
+export async function getConteoPorCategoria() {
+  const { data, error } = await supabase
+    .from('equipment_base')
+    .select('category, equipment_variants(shop_disponible)')
+  if (error) throw error
+  const conteo = {}
+  for (const base of data) {
+    if (base.equipment_variants.some((v) => v.shop_disponible)) {
+      conteo[base.category] = (conteo[base.category] ?? 0) + 1
+    }
+  }
+  return conteo
+}
+
+export async function getEquipmentPorCategoria(category) {
+  const { data, error } = await supabase
+    .from('equipment_base')
+    .select(
+      'id, base_key, nombre, descripcion, category, admite_colores, colores:equipment_base_colores(color:colors(*)), variantes:equipment_variants(*, material:materials(*))',
+    )
+    .eq('category', category)
+    .order('nombre')
   if (error) throw error
   return data
+    .map((base) => ({
+      ...base,
+      colores: base.colores.map((c) => c.color),
+      variantes: base.variantes
+        .filter((v) => v.shop_disponible)
+        .sort((a, b) => a.precio_oro - b.precio_oro),
+    }))
+    .filter((base) => base.variantes.length > 0)
 }
 
 export async function getInventory() {
   const { data, error } = await supabase
     .from('inventory')
-    .select('id, equipado, adquirido_at, item:equipment_catalog(*)')
+    .select(
+      'id, equipado, adquirido_at, color:colors(*), item:equipment_variants(*, base:equipment_base(*), material:materials(*))',
+    )
     .order('adquirido_at', { ascending: false })
   if (error) throw error
   return data
 }
 
-export async function comprarItem(itemId) {
-  const { error } = await supabase.rpc('comprar_item', { p_item_id: itemId })
+export async function comprarItem(variantId, colorId = null) {
+  const { error } = await supabase.rpc('comprar_item', { p_variant_id: variantId, p_color_id: colorId })
   if (error) throw error
 }
 
@@ -63,7 +112,7 @@ export async function venderItem(inventoryId) {
 }
 
 export async function equiparItem(inventoryId) {
-  const { error } = await supabase.from('inventory').update({ equipado: true }).eq('id', inventoryId)
+  const { error } = await supabase.rpc('equipar_item', { p_inventory_id: inventoryId })
   if (error) throw error
 }
 
@@ -104,7 +153,7 @@ export async function getZonasCompletadas() {
 export async function getHistorial(limit = 20) {
   const { data, error } = await supabase
     .from('encounter_log')
-    .select('id, created_at, chance, resultado, oro_ganado, zone:zones(nombre), item:equipment_catalog(nombre)')
+    .select('id, created_at, chance, resultado, oro_ganado, zone:zones(nombre), item:equipment_variants(nombre)')
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw error

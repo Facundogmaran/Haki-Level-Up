@@ -10,12 +10,16 @@ function formatearChance(chance) {
 }
 
 const NOMBRES_SLOT = {
-  cabeza: 'el casco',
+  head: 'el casco',
+  neck: 'el collar',
+  ring: 'el anillo',
+  shoulder: 'la hombrera',
+  gloves: 'los guantes',
   torso: 'la armadura',
-  arma: 'el arma',
-  piernas: 'las piernas',
-  pies: 'las botas',
-  accesorio: 'el accesorio',
+  legs: 'las piernas',
+  feet: 'las botas',
+  weapon: 'el arma',
+  shield: 'el escudo',
 }
 
 export default function Mapa() {
