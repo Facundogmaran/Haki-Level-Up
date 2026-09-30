@@ -549,6 +549,13 @@ button.activo {
   margin-top: 10px;
 }
 
+/* Reserva la misma altura que el título de un grupo (ej. "Afro") sin
+   mostrar texto, para que el recuadro de "Ninguno" quede a la altura
+   de las miniaturas y no pegado arriba junto a los títulos. */
+.detalle-item-invisible {
+  visibility: hidden;
+}
+
 .grilla-miniaturas {
   display: flex;
   flex-wrap: wrap;

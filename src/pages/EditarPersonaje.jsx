@@ -108,14 +108,19 @@ export default function EditarPersonaje() {
       <div className="tarjeta">
         <h3>Peinado</h3>
         <div className="grilla-miniaturas">
-          <button
-            className={`miniatura-opcion ${!apariencia.hairStyle ? 'activo' : ''}`}
-            onClick={() => set('hairStyle', null)}
-            title="Ninguno"
-            aria-label="Ninguno"
-          >
-            <IconoNinguno />
-          </button>
+          <div className="grupo-miniaturas">
+            <p className="detalle-item detalle-item-invisible" aria-hidden="true">·</p>
+            <div className="grilla-miniaturas">
+              <button
+                className={`miniatura-opcion ${!apariencia.hairStyle ? 'activo' : ''}`}
+                onClick={() => set('hairStyle', null)}
+                title="Ninguno"
+                aria-label="Ninguno"
+              >
+                <IconoNinguno />
+              </button>
+            </div>
+          </div>
           {Object.entries(PEINADOS_AGRUPADOS).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
               <p className="detalle-item">{grupo}</p>
@@ -139,14 +144,19 @@ export default function EditarPersonaje() {
       <div className="tarjeta">
         <h3>Vello facial</h3>
         <div className="grilla-miniaturas">
-          <button
-            className={`miniatura-opcion ${!apariencia.facialHairStyle ? 'activo' : ''}`}
-            onClick={() => set('facialHairStyle', null)}
-            title="Ninguno"
-            aria-label="Ninguno"
-          >
-            <IconoNinguno />
-          </button>
+          <div className="grupo-miniaturas">
+            <p className="detalle-item detalle-item-invisible" aria-hidden="true">·</p>
+            <div className="grilla-miniaturas">
+              <button
+                className={`miniatura-opcion ${!apariencia.facialHairStyle ? 'activo' : ''}`}
+                onClick={() => set('facialHairStyle', null)}
+                title="Ninguno"
+                aria-label="Ninguno"
+              >
+                <IconoNinguno />
+              </button>
+            </div>
+          </div>
           {Object.entries(VELLO_AGRUPADO).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
               <p className="detalle-item">{grupo}</p>
