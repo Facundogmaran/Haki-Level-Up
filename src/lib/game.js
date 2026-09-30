@@ -31,6 +31,11 @@ export async function asignarPunto(atributo) {
   if (error) throw error
 }
 
+export async function quitarPunto(atributo) {
+  const { error } = await supabase.rpc('quitar_punto', { p_atributo: atributo })
+  if (error) throw error
+}
+
 export async function actualizarApariencia(characterId, apariencia) {
   const { error } = await supabase.from('character').update({ apariencia }).eq('id', characterId)
   if (error) throw error

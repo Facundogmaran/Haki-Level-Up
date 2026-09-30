@@ -6,6 +6,7 @@ import {
   asignarPunto,
   getCharacter,
   getInventory,
+  quitarPunto,
   sumarBonusEquipo,
   xpRequeridaParaNivel,
 } from '../lib/game'
@@ -57,6 +58,18 @@ export default function Personaje() {
     setError('')
     try {
       await asignarPunto(atributo)
+      await cargar()
+    } catch (e) {
+      setError(e.message)
+    }
+    setAsignando(false)
+  }
+
+  async function handleQuitar(atributo) {
+    setAsignando(true)
+    setError('')
+    try {
+      await quitarPunto(atributo)
       await cargar()
     } catch (e) {
       setError(e.message)
@@ -119,11 +132,18 @@ export default function Personaje() {
                     </span>
                   )}
                 </span>
-                {personaje.puntos_libres > 0 && (
-                  <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
-                    +
-                  </button>
-                )}
+                <span className="fila-atributo-acciones">
+                  {personaje[atributo] > 5 && (
+                    <button disabled={asignando} onClick={() => handleQuitar(atributo)}>
+                      −
+                    </button>
+                  )}
+                  {personaje.puntos_libres > 0 && (
+                    <button disabled={asignando} onClick={() => handleAsignar(atributo)}>
+                      +
+                    </button>
+                  )}
+                </span>
               </div>
             )
           })}
