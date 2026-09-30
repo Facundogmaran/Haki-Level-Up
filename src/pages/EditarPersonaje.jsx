@@ -110,8 +110,10 @@ export default function EditarPersonaje() {
           <button
             className={`miniatura-opcion ${!apariencia.hairStyle ? 'activo' : ''}`}
             onClick={() => set('hairStyle', null)}
+            title="Ninguno"
+            aria-label="Ninguno"
           >
-            Ninguno
+            🚫
           </button>
           {Object.entries(PEINADOS_AGRUPADOS).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
@@ -139,8 +141,10 @@ export default function EditarPersonaje() {
           <button
             className={`miniatura-opcion ${!apariencia.facialHairStyle ? 'activo' : ''}`}
             onClick={() => set('facialHairStyle', null)}
+            title="Ninguno"
+            aria-label="Ninguno"
           >
-            Ninguno
+            🚫
           </button>
           {Object.entries(VELLO_AGRUPADO).map(([grupo, opciones]) => (
             <div key={grupo} className="grupo-miniaturas">
