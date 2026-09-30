@@ -497,6 +497,9 @@ button.activo {
   font-size: 1.4rem;
   line-height: 1;
   padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icono-cabecera-izq {
@@ -505,6 +508,12 @@ button.activo {
 
 .icono-cabecera-der {
   right: 4px;
+}
+
+.boton-ver-inventario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .fila-opciones-rasgo {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
+import IconoBolsa from '../components/IconoBolsa'
 import {
   ATRIBUTOS,
   asignarPunto,
@@ -84,7 +85,7 @@ export default function Personaje() {
           aria-label="Inventario"
           title="Inventario"
         >
-          🎒
+          <IconoBolsa />
         </button>
         <button
           className="icono-cabecera icono-cabecera-der"

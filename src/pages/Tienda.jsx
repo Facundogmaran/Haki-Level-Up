@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
+import IconoBolsa from '../components/IconoBolsa'
 import IconoEquipo from '../components/IconoEquipo'
 import { NOMBRES_CATEGORIA, bonusTexto, claveVisual, requisitosFaltantes, requisitosTexto } from '../lib/equipoDisplay'
 import {
@@ -100,8 +101,8 @@ export default function Tienda() {
     <div className="pagina">
       <div className="tarjeta fila-stats-top">
         <span>🪙 {oro}</span>
-        <button className="boton-volver" onClick={() => navigate('/personaje/inventario')}>
-          🎒 Ver inventario
+        <button className="boton-volver boton-ver-inventario" onClick={() => navigate('/personaje/inventario')}>
+          <IconoBolsa size={16} /> Ver inventario
         </button>
       </div>
 
