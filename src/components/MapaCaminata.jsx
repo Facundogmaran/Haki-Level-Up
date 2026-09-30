@@ -28,7 +28,7 @@ function direccionEntre(desde, hasta) {
   return dy > 0 ? 'abajo' : 'arriba'
 }
 
-export default function MapaCaminata({ zonas, nivel, apariencia, completadas, zonaSeleccionadaId, onSeleccionar, onLlegar }) {
+export default function MapaCaminata({ zonas, nivel, apariencia, equipado, completadas, zonaSeleccionadaId, onSeleccionar, onLlegar }) {
   const [posActualId, setPosActualId] = useState(zonas[0]?.id ?? null)
   const [direccion, setDireccion] = useState('abajo')
   const [caminando, setCaminando] = useState(false)
@@ -111,7 +111,7 @@ export default function MapaCaminata({ zonas, nivel, apariencia, completadas, zo
         className="mapa-personaje"
         style={{ left: `${(posActual.x / MAPA_VIEWBOX.w) * 100}%`, top: `${(posActual.y / MAPA_VIEWBOX.h) * 100}%` }}
       >
-        <AvatarAnimado apariencia={apariencia} direccion={direccion} arrastrable={false} />
+        <AvatarAnimado apariencia={apariencia} direccion={direccion} arrastrable={false} equipado={equipado} />
       </div>
 
       {caminando && <p className="mapa-caminando">Caminando...</p>}

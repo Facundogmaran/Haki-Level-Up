@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import MapaCaminata from '../components/MapaCaminata'
-import { getCharacter, getZones, getZonasCompletadas, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
+import { getCharacter, getInventory, getZones, getZonasCompletadas, intentarEncuentro, previsualizarEncuentro } from '../lib/game'
 
 function formatearChance(chance) {
   const pct = chance * 100
@@ -27,6 +27,7 @@ export default function Mapa() {
   const [personaje, setPersonaje] = useState(null)
   const [previews, setPreviews] = useState({})
   const [completadas, setCompletadas] = useState(new Set())
+  const [equipado, setEquipado] = useState([])
   const [error, setError] = useState('')
 
   const [zonaSeleccionadaId, setZonaSeleccionadaId] = useState(null)
@@ -36,10 +37,11 @@ export default function Mapa() {
 
   async function cargar() {
     try {
-      const [z, p, comp] = await Promise.all([getZones(), getCharacter(), getZonasCompletadas()])
+      const [z, p, comp, inv] = await Promise.all([getZones(), getCharacter(), getZonasCompletadas(), getInventory()])
       setZonas(z)
       setPersonaje(p)
       setCompletadas(comp)
+      setEquipado(inv.filter((i) => i.equipado))
 
       const entries = await Promise.all(
         z.map(async (zona) => [zona.id, await previsualizarEncuentro(zona.id)]),
@@ -92,6 +94,7 @@ export default function Mapa() {
         zonas={zonas}
         nivel={personaje.nivel}
         apariencia={personaje.apariencia}
+        equipado={equipado}
         completadas={completadas}
         zonaSeleccionadaId={zonaSeleccionadaId}
         onSeleccionar={(zona) => handleTocarNodo(zona)}
