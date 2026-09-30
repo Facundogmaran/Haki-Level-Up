@@ -103,7 +103,7 @@ export default function Inventario() {
   }
 
   return (
-    <div className="pagina">
+    <div className="pagina pagina-con-avatar-fijo">
       <button onClick={() => navigate('/')} className="boton-volver">‹ Volver</button>
 
       <div className="avatar-contenedor avatar-contenedor-fijo">

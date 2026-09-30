@@ -420,20 +420,29 @@ button.activo {
   padding: 4px 0 8px;
 }
 
-/* En Editar personaje e Inventario: el avatar queda pegado arriba al
-   bajar por la lista. `transform: translateZ(0)` fuerza su propia capa
-   de composición -- sin esto, Safari/iOS puede pintar el contenido que
-   sigue por ENCIMA del sticky durante el scroll aunque su posición ya
-   esté calculada bien (bug conocido de WebKit con position: sticky). */
+/* En Editar personaje e Inventario: el avatar queda fijo arriba mientras
+   el resto de la lista scrollea debajo. Usamos `position: fixed` (no
+   `sticky`): en Safari/iOS, `position: sticky` dentro de este layout
+   pinta de forma intermitente el contenido que sigue por ENCIMA del
+   avatar durante el scroll, incluso con la posición ya calculada bien
+   (bug conocido de WebKit) -- `fixed` no depende de ese cálculo y no
+   tiene ese problema. Como sale del flujo, `.pagina-con-avatar-fijo`
+   le reserva el espacio (mismo alto que este bloque) con padding-top. */
 .avatar-contenedor-fijo {
-  position: sticky;
+  position: fixed;
   top: env(safe-area-inset-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
   z-index: 20;
   background: var(--bg);
-  padding-top: 8px;
-  margin-top: -8px;
-  transform: translateZ(0);
-  will-change: transform;
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+.pagina-con-avatar-fijo {
+  padding-top: 216px;
 }
 
 .avatar-lienzo {

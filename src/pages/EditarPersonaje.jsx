@@ -65,7 +65,7 @@ export default function EditarPersonaje() {
   if (!apariencia) return <p>Cargando...</p>
 
   return (
-    <div className="pagina">
+    <div className="pagina pagina-con-avatar-fijo">
       <button onClick={() => navigate('/')} className="boton-volver">‹ Volver</button>
 
       <div className="avatar-contenedor avatar-contenedor-fijo">
