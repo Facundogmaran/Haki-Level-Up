@@ -38,16 +38,22 @@ function useCuadroCaminata() {
   return cuadro
 }
 
-function CapaAnimada({ src, direccion, cuadro }) {
+function CapaAnimada({ src, direccion, cuadro, cuadrosTotal = CUADROS }) {
   if (!src) return null
   const fila = FILA_DIRECCION[direccion]
+  // Algunas armas (LPC "walk_128") tienen su propia hoja con más o menos
+  // cuadros que el ciclo de caminata del cuerpo (9): se remapea el
+  // cuadro compartido a la cantidad de cuadros propia de esa hoja para
+  // no desincronizarse del todo, aunque el timing exacto no sea 1 a 1.
+  const cuadroEnCapa = Math.floor((cuadro / CUADROS) * cuadrosTotal)
   return (
     <div className="avatar-capa-viewport">
       <div
         className="avatar-capa-hoja"
         style={{
           backgroundImage: `url(${src})`,
-          translate: `${(cuadro * -100) / CUADROS}% ${fila * -25}%`,
+          width: `${cuadrosTotal * 100}%`,
+          translate: `${(cuadroEnCapa * -100) / cuadrosTotal}% ${fila * -25}%`,
         }}
       />
     </div>
@@ -102,8 +108,8 @@ export default function AvatarAnimado({ apariencia, direccion: direccionControla
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {capas.map(({ src, key }) => (
-        <CapaAnimada key={key} src={src} direccion={direccion} cuadro={cuadro} />
+      {capas.map(({ src, key, cuadrosTotal }) => (
+        <CapaAnimada key={key} src={src} direccion={direccion} cuadro={cuadro} cuadrosTotal={cuadrosTotal} />
       ))}
     </div>
   )

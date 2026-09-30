@@ -119,6 +119,16 @@ export const Z_POS_CUERPO = {
   orejas: 126,
 }
 
+// Un puñado de armas (katana, scimitar) usan la animación "walk_128" de
+// LPC: la misma cantidad de cuadros (9) pero dibujados en una hoja de
+// 128px por cuadro en vez de 64px (para que la hoja fuente pese menos
+// se recortan offline a 9x4 igual que el resto -- ver
+// build_equip_sprites*.js). Si en el futuro se suma un arma que
+// realmente tenga OTRA cantidad de cuadros, este mapa (carpeta -> total
+// de cuadros) es lo que hay que completar; CapaAnimada en
+// AvatarAnimado.jsx ya sabe remapear el cuadro compartido del cuerpo.
+const CUADROS_ESPECIALES = {}
+
 // Ítem equipado (de getInventory/game.js) -> hasta 2 capas de sprite LPC
 // (bg detrás del cuerpo, fg delante) si ese equipamiento ya tiene su
 // carpeta generada en public/avatar-equip/. Si no la tiene, no devuelve
@@ -130,15 +140,25 @@ export function capasEquipoWalk(itemsEquipados) {
     const carpeta = base?.lpc_sprite_folder
     if (!carpeta) continue
 
-    const variante = inv.item.material?.nombre ?? inv.color?.nombre
-    if (!variante) continue
+    const variante = inv.item.material?.nombre ?? inv.color?.nombre ?? 'default'
+    const cuadrosTotal = CUADROS_ESPECIALES[carpeta]
 
     if (base.lpc_zpos_bg != null) {
-      capas.push({ key: `equipo-${inv.id}-bg`, zPos: base.lpc_zpos_bg, src: `/avatar-equip/${carpeta}/${variante}_bg.png` })
+      capas.push({
+        key: `equipo-${inv.id}-bg`,
+        zPos: base.lpc_zpos_bg,
+        src: `/avatar-equip/${carpeta}/${variante}_bg.png`,
+        cuadrosTotal,
+      })
     }
     if (base.lpc_zpos_fg != null) {
       const sufijo = base.lpc_zpos_bg != null ? '_fg' : ''
-      capas.push({ key: `equipo-${inv.id}-fg`, zPos: base.lpc_zpos_fg, src: `/avatar-equip/${carpeta}/${variante}${sufijo}.png` })
+      capas.push({
+        key: `equipo-${inv.id}-fg`,
+        zPos: base.lpc_zpos_fg,
+        src: `/avatar-equip/${carpeta}/${variante}${sufijo}.png`,
+        cuadrosTotal,
+      })
     }
   }
   return capas
