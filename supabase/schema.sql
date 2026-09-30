@@ -702,6 +702,7 @@ update equipment_base set lpc_sprite_folder = 'grebas_cuero', lpc_zpos_fg = 20 w
 update equipment_base set lpc_sprite_folder = 'tunica_viaje', lpc_zpos_fg = 35 where base_key = 'tunica_viaje';
 update equipment_base set lpc_sprite_folder = 'katana', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'katana';
 update equipment_base set lpc_sprite_folder = 'scimitar', lpc_zpos_bg = 9, lpc_zpos_fg = 140 where base_key = 'scimitar';
+update equipment_base set lpc_sprite_folder = 'kite_shield', lpc_zpos_fg = 110 where base_key = 'kite_shield';
 
 -- --- Catálogo ampliado: bases sin variantes (31)
 insert into equipment_base (base_key, nombre, descripcion, category) values
