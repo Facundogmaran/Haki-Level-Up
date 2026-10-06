@@ -166,9 +166,14 @@ export async function getHistorial(limit = 20) {
 }
 
 export async function getMuscleGroups() {
-  const { data, error } = await supabase.from('muscle_groups').select('*').order('nombre')
+  // Solo los grupos que tienen al menos un ejercicio activo.
+  const { data, error } = await supabase
+    .from('muscle_groups')
+    .select('id, nombre, exercises!inner(id)')
+    .eq('exercises.activo', true)
+    .order('nombre')
   if (error) throw error
-  return data
+  return data.map(({ id, nombre }) => ({ id, nombre }))
 }
 
 export async function getExercises(muscleGroupId) {
@@ -176,6 +181,7 @@ export async function getExercises(muscleGroupId) {
     .from('exercises')
     .select('*')
     .eq('muscle_group_id', muscleGroupId)
+    .order('orden')
     .order('nombre')
   if (error) throw error
   return data

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Calendario from '../components/Calendario'
+import CargaEjercicioFuerza from '../components/CargaEjercicioFuerza'
 import ResultadoEntrenamiento from '../components/ResultadoEntrenamiento'
 import {
   editarEntrenamiento,
@@ -56,6 +57,39 @@ function agruparEjercicios(flatList) {
   return [...porEjercicio.values()]
 }
 
+// Las series se editan como texto (inputs). Una serie vacía (sin reps ni
+// peso) se ignora al guardar; el peso vacío con reps cargadas cuenta como 0
+// (ejercicios con el propio peso).
+const vacio = (v) => v === '' || v == null
+const serieValida = (s) => !vacio(s.repeticiones)
+const aNumero = (v) => (vacio(v) ? 0 : Number(v))
+const seriesIniciales = () => [
+  { peso_kg: '', repeticiones: '' },
+  { peso_kg: '', repeticiones: '' },
+]
+
+function ejerciciosNormalizados(lista) {
+  return lista
+    .map((e) => ({
+      ...e,
+      sets: e.sets.filter(serieValida).map((s) => ({ peso_kg: aNumero(s.peso_kg), repeticiones: aNumero(s.repeticiones) })),
+    }))
+    .filter((e) => e.sets.length > 0)
+}
+
+function errorEnSeries(lista) {
+  for (const e of lista) {
+    for (let i = 0; i < e.sets.length; i++) {
+      const s = e.sets[i]
+      if (vacio(s.repeticiones) && !vacio(s.peso_kg)) return `Falta cargar las repeticiones de la serie ${i + 1} de ${e.nombre}.`
+      if (serieValida(s) && (!(Number(s.repeticiones) >= 0) || !(aNumero(s.peso_kg) >= 0))) {
+        return `Peso y repeticiones deben ser números válidos (0 o más) — serie ${i + 1} de ${e.nombre}.`
+      }
+    }
+  }
+  return null
+}
+
 function velocidadCalculada(distanciaStr, duracionStr) {
   const distancia = Number(distanciaStr)
   const duracion = Number(duracionStr)
@@ -83,9 +117,7 @@ export default function Entrenamiento() {
   const [ultimoRegistro, setUltimoRegistro] = useState(null)
   const [ejerciciosAgregados, setEjerciciosAgregados] = useState([])
   const [duracionFuerza, setDuracionFuerza] = useState('')
-  const [serieForm, setSerieForm] = useState({ peso_kg: '', repeticiones: '' })
-  const [serieEditIndex, setSerieEditIndex] = useState(null)
-  const [origenDetalle, setOrigenDetalle] = useState('ejercicio') // 'ejercicio' | 'resumen'
+  const [origenDetalle, setOrigenDetalle] = useState('musculo') // 'musculo' | 'resumen'
 
   const [workoutEditandoId, setWorkoutEditandoId] = useState(null)
   const [workoutAbierto, setWorkoutAbierto] = useState(null)
@@ -127,96 +159,87 @@ export default function Entrenamiento() {
     setUltimoRegistro(null)
     setEjerciciosAgregados([])
     setDuracionFuerza('')
-    setSerieForm({ peso_kg: '', repeticiones: '' })
-    setSerieEditIndex(null)
     setWorkoutEditandoId(null)
     setError('')
   }
 
-  async function abrirMusculo(musculo) {
-    setMusculoActivo(musculo)
+  // Ejercicios activos del grupo + los ya cargados en este entrenamiento que
+  // hoy están inactivos (entrenamientos viejos), para poder verlos/editarlos.
+  function ejerciciosVisibles(lista) {
+    return lista.filter((e) => e.activo || ejerciciosAgregados.some((a) => a.exercise_id === e.id))
+  }
+
+  async function seleccionarEjercicio(ej) {
+    setEjercicioActivo(ej)
     setError('')
     try {
-      setEjerciciosMusculo(await getExercises(musculo.id))
+      setUltimoRegistro(await getUltimoRegistroEjercicio(ej.id))
+    } catch {
+      setUltimoRegistro(null)
+    }
+  }
+
+  async function abrirMusculo(musculo) {
+    setError('')
+    try {
+      const lista = ejerciciosVisibles(await getExercises(musculo.id))
+      if (lista.length === 0) {
+        setError('Este músculo todavía no tiene ejercicios.')
+        return
+      }
+      setMusculoActivo(musculo)
+      setEjerciciosMusculo(lista)
+      setOrigenDetalle('musculo')
+      await seleccionarEjercicio(lista[0])
       setPaso('fuerza_ejercicio')
     } catch (e) {
       setError(e.message)
     }
   }
 
-  async function abrirEjercicioDetalle(ejercicio, origen) {
-    setEjercicioActivo(ejercicio)
-    setOrigenDetalle(origen)
+  async function abrirEjercicioDesdeResumen(entrada) {
     setError('')
     try {
-      setUltimoRegistro(await getUltimoRegistroEjercicio(ejercicio.id))
-    } catch {
-      setUltimoRegistro(null)
+      const grupos = musculos.length > 0 ? musculos : await getMuscleGroups()
+      if (musculos.length === 0) setMusculos(grupos)
+      let lista = entrada.muscle_group_id ? ejerciciosVisibles(await getExercises(entrada.muscle_group_id)) : []
+      let activo = lista.find((e) => e.id === entrada.exercise_id)
+      if (!activo) {
+        activo = { id: entrada.exercise_id, nombre: entrada.nombre, imagen: null, activo: true, muscle_group_id: entrada.muscle_group_id }
+        lista = [activo]
+      }
+      setMusculoActivo(grupos.find((m) => m.id === entrada.muscle_group_id) ?? { id: entrada.muscle_group_id, nombre: '' })
+      setEjerciciosMusculo(lista)
+      setOrigenDetalle('resumen')
+      await seleccionarEjercicio(activo)
+      setPaso('fuerza_ejercicio')
+    } catch (e) {
+      setError(e.message)
     }
-    setSerieForm({ peso_kg: '', repeticiones: '' })
-    setSerieEditIndex(null)
-    setPaso('fuerza_ejercicio_detalle')
   }
 
-  function setsDeEjercicio(exerciseId) {
-    return ejerciciosAgregados.find((e) => e.exercise_id === exerciseId)?.sets ?? []
+  function setsActivos() {
+    if (!ejercicioActivo) return []
+    return ejerciciosAgregados.find((e) => e.exercise_id === ejercicioActivo.id)?.sets ?? seriesIniciales()
   }
 
-  function totalSeries() {
-    return ejerciciosAgregados.reduce((acc, e) => acc + e.sets.length, 0)
+  function cambiarSets(sets) {
+    const ej = ejercicioActivo
+    setEjerciciosAgregados((prev) =>
+      prev.some((e) => e.exercise_id === ej.id)
+        ? prev.map((e) => (e.exercise_id === ej.id ? { ...e, sets } : e))
+        : [...prev, { exercise_id: ej.id, nombre: ej.nombre, muscle_group_id: ej.muscle_group_id ?? musculoActivo?.id, sets }],
+    )
   }
 
-  function empezarEdicionSerie(idx) {
-    const sets = setsDeEjercicio(ejercicioActivo.id)
-    setSerieForm({ peso_kg: String(sets[idx].peso_kg), repeticiones: String(sets[idx].repeticiones) })
-    setSerieEditIndex(idx)
-  }
-
-  function guardarSerie() {
-    const peso = Number(serieForm.peso_kg)
-    const reps = Number(serieForm.repeticiones)
-    if (!(peso >= 0) || !(reps >= 0)) {
-      setError('Peso y repeticiones deben ser números válidos (0 o más).')
+  function irAResumen() {
+    const err = errorEnSeries(ejerciciosAgregados)
+    if (err) {
+      setError(err)
       return
     }
     setError('')
-    setEjerciciosAgregados((prev) => {
-      const existente = prev.find((e) => e.exercise_id === ejercicioActivo.id)
-      if (!existente) {
-        return [...prev, { exercise_id: ejercicioActivo.id, nombre: ejercicioActivo.nombre, muscle_group_id: musculoActivo?.id, sets: [{ peso_kg: peso, repeticiones: reps }] }]
-      }
-      return prev.map((e) => {
-        if (e.exercise_id !== ejercicioActivo.id) return e
-        const sets = [...e.sets]
-        if (serieEditIndex !== null) sets[serieEditIndex] = { peso_kg: peso, repeticiones: reps }
-        else sets.push({ peso_kg: peso, repeticiones: reps })
-        return { ...e, sets }
-      })
-    })
-    setSerieForm({ peso_kg: '', repeticiones: '' })
-    setSerieEditIndex(null)
-  }
-
-  function duplicarSerie(idx) {
-    setEjerciciosAgregados((prev) =>
-      prev.map((e) => {
-        if (e.exercise_id !== ejercicioActivo.id) return e
-        const sets = [...e.sets.slice(0, idx + 1), { ...e.sets[idx] }, ...e.sets.slice(idx + 1)]
-        return { ...e, sets }
-      }),
-    )
-  }
-
-  function eliminarSerie(idx) {
-    setEjerciciosAgregados((prev) =>
-      prev
-        .map((e) => (e.exercise_id === ejercicioActivo.id ? { ...e, sets: e.sets.filter((_, i) => i !== idx) } : e))
-        .filter((e) => e.sets.length > 0),
-    )
-    if (serieEditIndex === idx) {
-      setSerieForm({ peso_kg: '', repeticiones: '' })
-      setSerieEditIndex(null)
-    }
+    setPaso('fuerza_resumen')
   }
 
   function eliminarEjercicio(exerciseId) {
@@ -250,13 +273,19 @@ export default function Entrenamiento() {
 
   async function guardarFuerza() {
     setError('')
+    const errorSeries = errorEnSeries(ejerciciosAgregados)
+    const lista = ejerciciosNormalizados(ejerciciosAgregados)
+    if (errorSeries || lista.length === 0) {
+      setError(errorSeries ?? 'Cargá al menos una serie con repeticiones.')
+      return
+    }
     setCargando(true)
     try {
       const payload = {
         tipo: 'fuerza',
         fecha,
         duracion_min: Number(duracionFuerza),
-        ejercicios: ejerciciosAgregados.flatMap((e) =>
+        ejercicios: lista.flatMap((e) =>
           e.sets.map((s) => ({ exercise_id: e.exercise_id, peso_kg: s.peso_kg, repeticiones: s.repeticiones })),
         ),
       }
@@ -264,7 +293,7 @@ export default function Entrenamiento() {
         ? await editarEntrenamiento(workoutEditandoId, payload)
         : await registrarEntrenamiento(payload)
       setResultado(r)
-      setWorkoutGuardado({ ...payload, ejercicios: ejerciciosAgregados })
+      setWorkoutGuardado({ ...payload, ejercicios: lista })
     } catch (e) {
       setError(e.message)
     }
@@ -326,6 +355,7 @@ export default function Entrenamiento() {
   }
 
   const velocidadCardio = subtipo !== 'caminata' ? velocidadCalculada(form.distancia_km, form.duracion_min) : null
+  const ejerciciosValidos = ejerciciosNormalizados(ejerciciosAgregados)
 
   return (
     <div className="pagina">
@@ -472,7 +502,7 @@ export default function Entrenamiento() {
       {paso === 'fuerza_duracion' && (
         <div className="tarjeta form-entreno">
           <button
-            onClick={() => setPaso(ejerciciosAgregados.length > 0 ? 'fuerza_resumen' : workoutEditandoId ? 'lista' : 'categoria')}
+            onClick={() => setPaso(ejerciciosValidos.length > 0 ? 'fuerza_resumen' : workoutEditandoId ? 'lista' : 'categoria')}
             className="boton-volver"
           >
             ‹ Volver
@@ -485,7 +515,7 @@ export default function Entrenamiento() {
             disabled={!(Number(duracionFuerza) >= 0) || duracionFuerza === ''}
             onClick={async () => {
               setError('')
-              if (ejerciciosAgregados.length > 0) {
+              if (ejerciciosValidos.length > 0) {
                 setPaso('fuerza_resumen')
                 return
               }
@@ -513,72 +543,28 @@ export default function Entrenamiento() {
         </div>
       )}
 
-      {paso === 'fuerza_ejercicio' && (
+      {paso === 'fuerza_ejercicio' && ejercicioActivo && (
         <div className="lista-items">
-          <button onClick={() => setPaso('fuerza_musculo')} className="boton-volver">‹ Cambiar músculo</button>
-          <p className="detalle-item">{musculoActivo?.nombre}</p>
-          {ejerciciosMusculo.map((ej) => {
-            const n = setsDeEjercicio(ej.id).length
-            return (
-              <button key={ej.id} className="tarjeta categoria-card item-catalogo" onClick={() => abrirEjercicioDetalle(ej, 'ejercicio')}>
-                <span>{n > 0 ? '✅' : '⬜'} {ej.nombre}</span>
-                {n > 0 && <span className="detalle-item">{n} serie{n === 1 ? '' : 's'}</span>}
-              </button>
-            )
-          })}
-          {totalSeries() > 0 && (
-            <button className="boton-primario" onClick={() => setPaso('fuerza_resumen')}>
-              Finalizar entrenamiento →
-            </button>
-          )}
-        </div>
-      )}
-
-      {paso === 'fuerza_ejercicio_detalle' && ejercicioActivo && (
-        <div className="tarjeta form-entreno">
-          <button onClick={() => setPaso(origenDetalle === 'resumen' ? 'fuerza_resumen' : 'fuerza_ejercicio')} className="boton-volver">
-            ‹ Volver
+          <button
+            onClick={() => (origenDetalle === 'resumen' ? irAResumen() : setPaso('fuerza_musculo'))}
+            className="boton-volver"
+          >
+            {origenDetalle === 'resumen' ? '‹ Volver al resumen' : '‹ Cambiar músculo'}
           </button>
-          <strong>{ejercicioActivo.nombre}</strong>
-          {ultimoRegistro && (
-            <p className="detalle-item">
-              Última vez: {ultimoRegistro.peso_kg} kg × {ultimoRegistro.repeticiones} reps
-            </p>
-          )}
-
-          {setsDeEjercicio(ejercicioActivo.id).length > 0 && (
-            <div className="lista-series">
-              {setsDeEjercicio(ejercicioActivo.id).map((s, i) => (
-                <div key={i} className="fila-atributo">
-                  <span className="nombre-atributo">Serie {i + 1}</span>
-                  <span className="valor-atributo">{s.peso_kg} kg × {s.repeticiones}</span>
-                  <span className="fila-atributo-acciones">
-                    <button onClick={() => empezarEdicionSerie(i)}>✎</button>
-                    <button onClick={() => duplicarSerie(i)} title="Duplicar serie" aria-label="Duplicar serie">⧉</button>
-                    <button onClick={() => eliminarSerie(i)}>🗑</button>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <label>Peso (kg)</label>
-          <input type="number" min="0" step="0.5" value={serieForm.peso_kg}
-            onChange={(e) => setSerieForm({ ...serieForm, peso_kg: e.target.value })} />
-          <label>Repeticiones</label>
-          <input type="number" min="0" step="1" value={serieForm.repeticiones}
-            onChange={(e) => setSerieForm({ ...serieForm, repeticiones: e.target.value })} />
+          <CargaEjercicioFuerza
+            ejercicios={ejerciciosMusculo}
+            activoId={ejercicioActivo.id}
+            onSeleccionar={seleccionarEjercicio}
+            conDatos={new Set(ejerciciosValidos.map((e) => e.exercise_id))}
+            nombreGrupo={musculoActivo?.nombre}
+            ultimoRegistro={ultimoRegistro}
+            sets={setsActivos()}
+            onCambiarSets={cambiarSets}
+          />
           {error && <p className="error">{error}</p>}
-          <button onClick={guardarSerie}>{serieEditIndex !== null ? 'Guardar cambios' : '+ Agregar serie'}</button>
-          {serieEditIndex !== null && (
-            <button
-              className="boton-vender"
-              onClick={() => {
-                setSerieForm({ peso_kg: '', repeticiones: '' })
-                setSerieEditIndex(null)
-              }}
-            >
-              Cancelar edición
+          {ejerciciosValidos.length > 0 && (
+            <button className="boton-primario" onClick={irAResumen}>
+              Finalizar entrenamiento →
             </button>
           )}
         </div>
@@ -589,11 +575,11 @@ export default function Entrenamiento() {
           <button className="boton-volver" onClick={() => setPaso('fuerza_duracion')}>
             Entrenamiento de fuerza — {duracionFuerza} min (✎ cambiar)
           </button>
-          {ejerciciosAgregados.map((e) => (
+          {ejerciciosValidos.map((e) => (
             <div
               key={e.exercise_id}
               className="tarjeta item-catalogo item-catalogo-clicable"
-              onClick={() => abrirEjercicioDetalle({ id: e.exercise_id, nombre: e.nombre }, 'resumen')}
+              onClick={() => abrirEjercicioDesdeResumen(e)}
             >
               <div>
                 <strong>{e.nombre}</strong>
@@ -626,7 +612,7 @@ export default function Entrenamiento() {
           >
             + Agregar más ejercicios
           </button>
-          <button disabled={cargando || ejerciciosAgregados.length === 0} onClick={guardarFuerza}>
+          <button disabled={cargando || ejerciciosValidos.length === 0} onClick={guardarFuerza}>
             Guardar entrenamiento
           </button>
         </div>

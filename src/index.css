@@ -976,3 +976,199 @@ button.activo {
   flex-shrink: 0;
   border: 1px solid var(--borde);
 }
+
+/* ---- Entrenamiento de fuerza: carrusel de ejercicios + series ---- */
+
+.carga-ejercicio {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.carrusel-ejercicios {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -16px;
+  padding: 8px 16px 6px;
+}
+
+.carrusel-ejercicios::-webkit-scrollbar {
+  display: none;
+}
+
+.carrusel-item {
+  position: relative;
+  flex: 0 0 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--superficie);
+  border: 2px solid var(--borde);
+  border-radius: 14px;
+  scroll-snap-align: center;
+}
+
+.carrusel-item-activo {
+  border-color: #7c5cff;
+  background: var(--superficie-2);
+}
+
+.carrusel-miniatura {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.ilustracion-vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  background: var(--superficie-2);
+}
+
+.carrusel-nombre {
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--texto-tenue);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.3em;
+}
+
+.carrusel-item-activo .carrusel-nombre {
+  color: var(--texto);
+}
+
+.carrusel-check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--exito);
+  color: #14301a;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ejercicio-imagen-grande {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  background: #fff;
+  border-radius: 16px;
+}
+
+.ejercicio-imagen {
+  width: 100%;
+  max-width: 270px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.ejercicio-imagen.ilustracion-vacia {
+  background: none;
+  font-size: 3rem;
+}
+
+.ejercicio-titulo h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.ejercicio-titulo .detalle-item {
+  margin: 2px 0 0;
+}
+
+.tabla-series {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tabla-series-fila {
+  display: grid;
+  grid-template-columns: 2rem 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.tabla-series-cabecera {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-tenue);
+  text-align: center;
+}
+
+.tabla-series-numero {
+  font-weight: 700;
+  text-align: center;
+  color: var(--texto-tenue);
+}
+
+.tabla-series-fila input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  font-size: 1.15rem;
+  text-align: center;
+  color: var(--texto);
+  background: var(--superficie-2);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.tabla-series-fila input::-webkit-outer-spin-button,
+.tabla-series-fila input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tabla-series-fila input:focus {
+  outline: none;
+  border-color: #7c5cff;
+}
+
+.tabla-series-acciones {
+  display: flex;
+  gap: 2px;
+}
+
+.tabla-series-acciones button {
+  width: 34px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--texto-tenue);
+  font-size: 1rem;
+}
+
+.boton-agregar-serie {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  background: transparent;
+  border: 1px dashed var(--borde);
+}
