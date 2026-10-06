@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
+import CampanaNotificaciones from '../components/CampanaNotificaciones'
 import IconoBolsa from '../components/IconoBolsa'
 import {
   ATRIBUTOS,
@@ -87,6 +88,7 @@ export default function Personaje() {
         >
           <IconoBolsa />
         </button>
+        <CampanaNotificaciones className="icono-cabecera icono-cabecera-campana" />
         <button
           className="icono-cabecera icono-cabecera-der"
           onClick={() => navigate('/personaje/editar')}

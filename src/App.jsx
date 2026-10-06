@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import NavBar from './components/NavBar'
 import { supabase } from './lib/supabaseClient'
+import Amigos from './pages/Amigos'
 import EditarPersonaje from './pages/EditarPersonaje'
 import Entrenamiento from './pages/Entrenamiento'
+import FichaAmigo from './pages/FichaAmigo'
 import Inventario from './pages/Inventario'
 import Login from './pages/Login'
 import Mapa from './pages/Mapa'
+import Notificaciones from './pages/Notificaciones'
 import Personaje from './pages/Personaje'
 import Tienda from './pages/Tienda'
 
@@ -32,6 +35,9 @@ export default function App() {
           <Route path="/entrenamiento" element={<Entrenamiento />} />
           <Route path="/tienda" element={<Tienda />} />
           <Route path="/mapa" element={<Mapa />} />
+          <Route path="/amigos" element={<Amigos />} />
+          <Route path="/amigos/:id" element={<FichaAmigo />} />
+          <Route path="/notificaciones" element={<Notificaciones />} />
         </Routes>
       </main>
       <NavBar />

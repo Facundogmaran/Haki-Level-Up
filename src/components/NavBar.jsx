@@ -6,6 +6,7 @@ const LINKS = [
   { to: '/entrenamiento', label: 'Entrenamiento' },
   { to: '/tienda', label: 'Tienda' },
   { to: '/mapa', label: 'Mapa' },
+  { to: '/amigos', label: 'Amigos' },
 ]
 
 export default function NavBar() {
