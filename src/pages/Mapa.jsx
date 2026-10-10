@@ -30,7 +30,7 @@ export default function Mapa() {
   const [equipado, setEquipado] = useState([])
   const [error, setError] = useState('')
 
-  const [zonaSeleccionadaId, setZonaSeleccionadaId] = useState(null)
+  // Misión abierta en el popup (al terminar de caminar hasta ella).
   const [zonaActiva, setZonaActiva] = useState(null)
   const [resultado, setResultado] = useState(null)
   const [luchando, setLuchando] = useState(false)
@@ -56,18 +56,14 @@ export default function Mapa() {
     cargar()
   }, [])
 
-  function handleTocarNodo(zona) {
-    setResultado(null)
-    setZonaActiva(null)
-    setZonaSeleccionadaId(zona.id)
-  }
-
   function handleLlegar(zonaId) {
     const zona = zonas.find((z) => z.id === zonaId)
+    setResultado(null)
+    setError('')
     setZonaActiva(zona ?? null)
   }
 
-  async function handleIntentar() {
+  async function handleCombatir() {
     if (!zonaActiva) return
     setLuchando(true)
     setError('')
@@ -82,11 +78,17 @@ export default function Mapa() {
     setLuchando(false)
   }
 
-  if (error) return <p className="error">{error}</p>
-  if (!personaje || zonas.length === 0) return <p>Cargando mapa...</p>
+  function cerrar() {
+    setZonaActiva(null)
+    setResultado(null)
+    setError('')
+  }
+
+  if (!personaje || zonas.length === 0) return error ? <p className="error">{error}</p> : <p>Cargando mapa...</p>
 
   const previewActiva = zonaActiva ? previews[zonaActiva.id] : null
   const porDebajoDeLoRecomendado = zonaActiva ? personaje.nivel < zonaActiva.requisito_nivel : false
+  const sinIntentos = previewActiva?.intentos_restantes === 0
 
   return (
     <div className="pagina">
@@ -96,57 +98,62 @@ export default function Mapa() {
         apariencia={personaje.apariencia}
         equipado={equipado}
         completadas={completadas}
-        zonaSeleccionadaId={zonaSeleccionadaId}
-        onSeleccionar={(zona) => handleTocarNodo(zona)}
+        bloqueado={!!zonaActiva}
         onLlegar={handleLlegar}
       />
 
+      {error && !zonaActiva && <p className="error">{error}</p>}
+
       {zonaActiva && (
-        <div className="tarjeta resultado-encuentro">
-          <strong>{zonaActiva.nombre}</strong>
-          <p className="detalle-item">
-            {zonaActiva.enemigo?.nombre} · Poder {zonaActiva.enemigo?.poder} · Nivel recomendado {zonaActiva.requisito_nivel}
-          </p>
-          {previewActiva && (
-            <>
-              <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
-                Probabilidad de éxito: {formatearChance(previewActiva.chance)}
-              </p>
-              <p className="detalle-item">Intentos hoy: {previewActiva.intentos_restantes} / 3</p>
-            </>
-          )}
+        <div className="overlay">
+          <div className="tarjeta resultado-entrenamiento-overlay resultado-encuentro">
+            <p className="resultado-titulo">{zonaActiva.nombre}</p>
+            <strong>{zonaActiva.enemigo?.nombre}</strong>
+            <p className="detalle-item">
+              Poder {zonaActiva.enemigo?.poder} · Nivel recomendado {zonaActiva.requisito_nivel}
+            </p>
 
-          {!resultado && (
-            <button disabled={luchando || previewActiva?.intentos_restantes === 0} onClick={handleIntentar}>
-              {luchando
-                ? 'Resolviendo...'
-                : previewActiva?.intentos_restantes === 0
-                  ? 'Sin intentos hoy'
-                  : 'Explorar'}
-            </button>
-          )}
-
-          {resultado && (
-            <>
-              <p className={resultado.gano ? 'exito' : 'fallo'}>
-                {resultado.gano ? `¡Venciste a ${resultado.enemigo}!` : `${resultado.enemigo} fue demasiado. No esta vez.`}
-              </p>
-              <p className="detalle-item">Probabilidad de éxito: {formatearChance(resultado.chance)}</p>
-              {resultado.gano && <p className="detalle-item">Ganaste 🪙 {resultado.oro_ganado}</p>}
-              {resultado.gano && resultado.item_ganado_id && (
-                <p className="detalle-item">¡También encontraste un objeto! Revisalo en la Tienda &gt; Inventario.</p>
-              )}
-              {!resultado.gano && resultado.oro_perdido > 0 && (
-                <p className="detalle-item fallo">Perdiste 🪙 {resultado.oro_perdido} en la huida.</p>
-              )}
-              {!resultado.gano && resultado.item_perdido_nombre && (
-                <p className="detalle-item fallo">
-                  ¡Perdiste {NOMBRES_SLOT[resultado.item_perdido_slot] ?? 'un ítem'} equipado: {resultado.item_perdido_nombre}!
+            {previewActiva && (
+              <>
+                <p className={`chance-exito ${porDebajoDeLoRecomendado ? 'chance-baja' : ''}`}>
+                  Probabilidad de éxito: {formatearChance(previewActiva.chance)}
                 </p>
-              )}
-              <button onClick={() => setResultado(null)}>Cerrar</button>
-            </>
-          )}
+                <p className="detalle-item">Intentos hoy: {previewActiva.intentos_restantes} / 3</p>
+              </>
+            )}
+
+            {resultado && (
+              <div className="combate-desenlace">
+                <p className={`combate-veredicto ${resultado.gano ? 'exito' : 'fallo'}`}>
+                  {resultado.gano ? '¡VICTORIA!' : 'DERROTA'}
+                </p>
+                <p className="resultado-resumen">
+                  {resultado.gano ? `¡Venciste a ${resultado.enemigo}!` : `${resultado.enemigo} fue demasiado. No esta vez.`}
+                </p>
+                {resultado.gano && <p className="resultado-xp">+{resultado.oro_ganado} 🪙</p>}
+                {resultado.gano && resultado.item_ganado_id && (
+                  <p className="detalle-item">¡También encontraste un objeto! Revisalo en el Inventario.</p>
+                )}
+                {!resultado.gano && resultado.oro_perdido > 0 && (
+                  <p className="detalle-item fallo">Perdiste 🪙 {resultado.oro_perdido} en la huida.</p>
+                )}
+                {!resultado.gano && resultado.item_perdido_nombre && (
+                  <p className="detalle-item fallo">
+                    ¡Perdiste {NOMBRES_SLOT[resultado.item_perdido_slot] ?? 'un ítem'} equipado: {resultado.item_perdido_nombre}!
+                  </p>
+                )}
+              </div>
+            )}
+
+            {error && <p className="error">{error}</p>}
+
+            <button disabled={luchando || sinIntentos} onClick={handleCombatir}>
+              {luchando ? 'Combatiendo...' : resultado ? (sinIntentos ? 'Sin intentos hoy' : '↻ Repetir') : sinIntentos ? 'Sin intentos hoy' : '⚔️ Combatir'}
+            </button>
+            <button className="boton-vender" disabled={luchando} onClick={cerrar}>
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
     </div>

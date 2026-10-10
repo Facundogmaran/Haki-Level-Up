@@ -226,7 +226,7 @@ button.activo {
 .mapa-lienzo {
   position: relative;
   width: 100%;
-  aspect-ratio: 300 / 560;
+  aspect-ratio: 300 / 430;
   background: linear-gradient(180deg, #241f36, #1e1930);
   border: 1px solid var(--borde);
   border-radius: 12px;
@@ -294,6 +294,18 @@ button.activo {
   background: var(--oro);
 }
 
+.mapa-nodo-pueblo .mapa-nodo-punto {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border-color: var(--texto-tenue);
+  background: var(--superficie);
+}
+
+.mapa-nodo-pueblo .mapa-nodo-etiqueta {
+  color: var(--oro);
+}
+
 .mapa-nodo-etiqueta {
   font-size: 0.6rem;
   color: var(--texto);
@@ -306,7 +318,7 @@ button.activo {
 .mapa-personaje {
   position: absolute;
   transform: translate(-50%, -78%);
-  transition: left 0.9s ease, top 0.9s ease;
+  transition: left 0.55s linear, top 0.55s linear;
   pointer-events: none;
   z-index: 3;
 }
@@ -1358,4 +1370,14 @@ button.activo {
   border-radius: 10px;
   padding: 8px;
   margin: 6px 0;
+}
+
+/* Botón secundario dentro de los popups de resultado/misión */
+.resultado-entrenamiento-overlay button.boton-vender {
+  background: none;
+  border: 1px solid var(--borde);
+  color: var(--texto-tenue);
+  font-size: 0.85rem;
+  font-weight: 400;
+  padding: 8px;
 }
