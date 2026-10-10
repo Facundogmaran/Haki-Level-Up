@@ -6,6 +6,7 @@ import IconoBolsa from '../components/IconoBolsa'
 import {
   ATRIBUTOS,
   asignarPunto,
+  calcularPoder,
   getCharacter,
   getInventory,
   quitarPunto,
@@ -104,6 +105,7 @@ export default function Personaje() {
         <h2>{personaje.nombre}</h2>
         <div className="fila-stats-top">
           <span>Nivel {personaje.nivel}</span>
+          <span>⚡ Poder {Math.round(calcularPoder(personaje, bonusEquipo))}</span>
           <span>🪙 {personaje.oro}</span>
         </div>
         <div className="barra-xp">

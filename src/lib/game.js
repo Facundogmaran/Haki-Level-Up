@@ -26,6 +26,14 @@ export function sumarBonusEquipo(itemsEquipados) {
   return total
 }
 
+// Poder = 5 * media geométrica de los atributos efectivos (base + bonus de
+// equipo), con mínimo 1 por atributo. Misma cuenta que poder_personaje() del
+// servidor (migración 028): concentrar todo en un atributo no alcanza.
+export function calcularPoder(personaje, bonusEquipo) {
+  const sumaLn = ATRIBUTOS.reduce((acc, a) => acc + Math.log(Math.max(1, personaje[a] + (bonusEquipo?.[a] ?? 0))), 0)
+  return 5 * Math.exp(sumaLn / ATRIBUTOS.length)
+}
+
 export async function asignarPunto(atributo) {
   const { error } = await supabase.rpc('asignar_punto', { p_atributo: atributo })
   if (error) throw error

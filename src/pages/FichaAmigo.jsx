@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AvatarAnimado from '../components/AvatarAnimado'
 import IconoEquipo from '../components/IconoEquipo'
 import ResultadoCombate from '../components/ResultadoCombate'
-import { ATRIBUTOS, getCharacter, getInventory, sumarBonusEquipo } from '../lib/game'
+import { ATRIBUTOS, calcularPoder, getCharacter, getInventory, sumarBonusEquipo } from '../lib/game'
 import { NOMBRES_ATRIBUTO, NOMBRES_CATEGORIA, bonusTexto, claveVisual } from '../lib/equipoDisplay'
 import { combatirAmigo, eliminarAmistad, getSocial, verAmigo } from '../lib/social'
 
@@ -23,7 +23,7 @@ export default function FichaAmigo() {
     try {
       const [a, p, social, inv] = await Promise.all([verAmigo(id), getCharacter(), getSocial(), getInventory()])
       const miBonus = sumarBonusEquipo(inv.filter((i) => i.equipado))
-      setMiPoder(ATRIBUTOS.reduce((acc, at) => acc + p[at] + miBonus[at], 0))
+      setMiPoder(calcularPoder(p, miBonus))
       setAmigo(a)
       setYo(p)
       setFriendshipId(social.amigos.find((x) => x.character_id === id)?.friendship_id ?? null)
