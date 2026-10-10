@@ -100,6 +100,8 @@ export async function getEquipmentPorCategoria(category) {
         .sort((a, b) => a.precio_oro - b.precio_oro),
     }))
     .filter((base) => base.variantes.length > 0)
+    // De menor a mayor precio (el de la variante más barata); a igual precio, alfabético.
+    .sort((a, b) => a.variantes[0].precio_oro - b.variantes[0].precio_oro || a.nombre.localeCompare(b.nombre))
 }
 
 export async function getInventory() {
