@@ -4,12 +4,14 @@ import CargaEjercicioFuerza from '../components/CargaEjercicioFuerza'
 import ResultadoEntrenamiento from '../components/ResultadoEntrenamiento'
 import {
   editarEntrenamiento,
+  esEjercicioPorTiempo,
   getDiasConEntrenamientoDelMes,
   getExercises,
   getMuscleGroups,
   getUltimoRegistroEjercicio,
   getWorkoutsPorFecha,
   registrarEntrenamiento,
+  textoSerie,
 } from '../lib/game'
 
 const ICONOS_HISTORIAL = { correr: '🏃', bici: '🚴', caminata: '🚶', fuerza: '🏋️', calorias: '🔥' }
@@ -81,9 +83,10 @@ function errorEnSeries(lista) {
   for (const e of lista) {
     for (let i = 0; i < e.sets.length; i++) {
       const s = e.sets[i]
-      if (vacio(s.repeticiones) && !vacio(s.peso_kg)) return `Falta cargar las repeticiones de la serie ${i + 1} de ${e.nombre}.`
+      const dato = esEjercicioPorTiempo(e.nombre) ? 'el tiempo' : 'las repeticiones'
+      if (vacio(s.repeticiones) && !vacio(s.peso_kg)) return `Falta cargar ${dato} de la serie ${i + 1} de ${e.nombre}.`
       if (serieValida(s) && (!(Number(s.repeticiones) >= 0) || !(aNumero(s.peso_kg) >= 0))) {
-        return `Peso y repeticiones deben ser números válidos (0 o más) — serie ${i + 1} de ${e.nombre}.`
+        return `Peso y ${esEjercicioPorTiempo(e.nombre) ? 'tiempo' : 'repeticiones'} deben ser números válidos (0 o más) — serie ${i + 1} de ${e.nombre}.`
       }
     }
   }
@@ -105,7 +108,7 @@ export default function Entrenamiento() {
   const [cargando, setCargando] = useState(false)
 
   // lista | categoria | cardio_subtipo | cardio_form | caminata_form |
-  // fuerza_duracion | fuerza_musculo | fuerza_ejercicio |
+  // fuerza_musculo | fuerza_ejercicio |
   // fuerza_ejercicio_detalle | fuerza_resumen | calorias_form
   const [paso, setPaso] = useState('lista')
   const [subtipo, setSubtipo] = useState(null)
@@ -232,6 +235,16 @@ export default function Entrenamiento() {
     )
   }
 
+  async function irAMusculos() {
+    setError('')
+    try {
+      if (musculos.length === 0) setMusculos(await getMuscleGroups())
+      setPaso('fuerza_musculo')
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   function irAResumen() {
     const err = errorEnSeries(ejerciciosAgregados)
     if (err) {
@@ -273,10 +286,14 @@ export default function Entrenamiento() {
 
   async function guardarFuerza() {
     setError('')
+    if (duracionFuerza === '' || !(Number(duracionFuerza) >= 0)) {
+      setError('Cargá el tiempo total del entrenamiento (min).')
+      return
+    }
     const errorSeries = errorEnSeries(ejerciciosAgregados)
     const lista = ejerciciosNormalizados(ejerciciosAgregados)
     if (errorSeries || lista.length === 0) {
-      setError(errorSeries ?? 'Cargá al menos una serie con repeticiones.')
+      setError(errorSeries ?? 'Cargá al menos una serie con repeticiones o tiempo.')
       return
     }
     setCargando(true)
@@ -351,7 +368,7 @@ export default function Entrenamiento() {
     setFecha(hoyISO())
     setEjerciciosAgregados(agruparEjercicios(w.ejercicios))
     setDuracionFuerza('')
-    setPaso('fuerza_duracion')
+    setPaso('fuerza_resumen')
   }
 
   const velocidadCardio = subtipo !== 'caminata' ? velocidadCalculada(form.distancia_km, form.duracion_min) : null
@@ -397,7 +414,7 @@ export default function Entrenamiento() {
                         w.ejercicios.map((e, i) => (
                           <div key={i} className="fila-atributo">
                             <span className="nombre-atributo">{e.exercise?.nombre}</span>
-                            <span className="valor-atributo">{e.peso_kg} kg × {e.repeticiones}</span>
+                            <span className="valor-atributo">{textoSerie(e.exercise?.nombre, e.peso_kg, e.repeticiones)}</span>
                           </div>
                         ))
                       ) : w.tipo === 'cardio' && w.subtipo === 'caminata' ? (
@@ -443,7 +460,7 @@ export default function Entrenamiento() {
         <div className="lista-items">
           <button onClick={reiniciarFlujo} className="boton-volver">‹ Cancelar</button>
           <button className="tarjeta categoria-card" onClick={() => setPaso('cardio_subtipo')}>🏃 Cardio</button>
-          <button className="tarjeta categoria-card" onClick={() => setPaso('fuerza_duracion')}>🏋️ Fuerza</button>
+          <button className="tarjeta categoria-card" onClick={irAMusculos}>🏋️ Fuerza</button>
           <button className="tarjeta categoria-card" onClick={() => setPaso('calorias_form')}>🔥 Calorías</button>
         </div>
       )}
@@ -499,42 +516,9 @@ export default function Entrenamiento() {
         </div>
       )}
 
-      {paso === 'fuerza_duracion' && (
-        <div className="tarjeta form-entreno">
-          <button
-            onClick={() => setPaso(ejerciciosValidos.length > 0 ? 'fuerza_resumen' : workoutEditandoId ? 'lista' : 'categoria')}
-            className="boton-volver"
-          >
-            ‹ Volver
-          </button>
-          <label>Tiempo total del entrenamiento (min)</label>
-          <input type="number" min="0" step="1" value={duracionFuerza}
-            onChange={(e) => setDuracionFuerza(e.target.value)} />
-          {error && <p className="error">{error}</p>}
-          <button
-            disabled={!(Number(duracionFuerza) >= 0) || duracionFuerza === ''}
-            onClick={async () => {
-              setError('')
-              if (ejerciciosValidos.length > 0) {
-                setPaso('fuerza_resumen')
-                return
-              }
-              try {
-                setMusculos(await getMuscleGroups())
-                setPaso('fuerza_musculo')
-              } catch (e) {
-                setError(e.message)
-              }
-            }}
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
-
       {paso === 'fuerza_musculo' && (
         <div className="lista-items">
-          <button onClick={() => setPaso('fuerza_duracion')} className="boton-volver">‹ Volver</button>
+          <button onClick={() => setPaso(ejerciciosValidos.length > 0 ? 'fuerza_resumen' : 'categoria')} className="boton-volver">‹ Volver</button>
           {musculos.map((m) => (
             <button key={m.id} className="tarjeta categoria-card" onClick={() => abrirMusculo(m)}>
               {m.nombre}
@@ -572,8 +556,8 @@ export default function Entrenamiento() {
 
       {paso === 'fuerza_resumen' && (
         <div className="lista-items">
-          <button className="boton-volver" onClick={() => setPaso('fuerza_duracion')}>
-            Entrenamiento de fuerza — {duracionFuerza} min (✎ cambiar)
+          <button className="boton-volver" onClick={irAMusculos}>
+            ‹ Volver a ejercicios
           </button>
           {ejerciciosValidos.map((e) => (
             <div
@@ -584,7 +568,7 @@ export default function Entrenamiento() {
               <div>
                 <strong>{e.nombre}</strong>
                 <p className="detalle-item">
-                  {e.sets.map((s, i) => `${s.peso_kg}×${s.repeticiones}`).join(' · ')}
+                  {e.sets.map((s) => (esEjercicioPorTiempo(e.nombre) ? `${s.peso_kg} kg·${s.repeticiones}s` : `${s.peso_kg}×${s.repeticiones}`)).join(' · ')}
                 </p>
               </div>
               <button
@@ -598,21 +582,14 @@ export default function Entrenamiento() {
               </button>
             </div>
           ))}
+          <button onClick={irAMusculos}>+ Agregar más ejercicios</button>
+          <div className="tarjeta form-entreno">
+            <label>Tiempo total del entrenamiento (min)</label>
+            <input type="number" inputMode="numeric" min="0" step="1" value={duracionFuerza}
+              onChange={(e) => setDuracionFuerza(e.target.value)} />
+          </div>
           {error && <p className="error">{error}</p>}
-          <button
-            onClick={async () => {
-              setError('')
-              try {
-                if (musculos.length === 0) setMusculos(await getMuscleGroups())
-                setPaso('fuerza_musculo')
-              } catch (e) {
-                setError(e.message)
-              }
-            }}
-          >
-            + Agregar más ejercicios
-          </button>
-          <button disabled={cargando || ejerciciosValidos.length === 0} onClick={guardarFuerza}>
+          <button disabled={cargando || ejerciciosValidos.length === 0 || duracionFuerza === ''} onClick={guardarFuerza}>
             Guardar entrenamiento
           </button>
         </div>

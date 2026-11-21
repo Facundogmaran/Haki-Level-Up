@@ -241,3 +241,14 @@ export async function getDiasConEntrenamientoDelMes(desde, hasta) {
   if (error) throw error
   return [...new Set(data.map((w) => w.fecha))]
 }
+
+// Ejercicios que se miden por tiempo (segundos) en lugar de repeticiones.
+// El valor se guarda igual en workout_exercises.repeticiones.
+export function esEjercicioPorTiempo(nombre) {
+  return /^plancha/i.test(nombre ?? '')
+}
+
+// "40 kg × 10" / "20 kg · 45 s" según el tipo de ejercicio.
+export function textoSerie(nombre, pesoKg, valor) {
+  return esEjercicioPorTiempo(nombre) ? `${pesoKg} kg · ${valor} s` : `${pesoKg} kg × ${valor}`
+}

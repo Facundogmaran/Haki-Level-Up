@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { esEjercicioPorTiempo, textoSerie } from '../lib/game'
 
 function rutaImagen(ej) {
   return ej.imagen ? `/ejercicios/${ej.imagen}.webp` : null
@@ -26,6 +27,7 @@ export default function CargaEjercicioFuerza({
 }) {
   const carruselRef = useRef(null)
   const activo = ejercicios.find((e) => e.id === activoId)
+  const porTiempo = esEjercicioPorTiempo(activo?.nombre)
 
   useEffect(() => {
     const el = carruselRef.current?.querySelector('[aria-current="true"]')
@@ -77,7 +79,7 @@ export default function CargaEjercicioFuerza({
         <p className="detalle-item">{nombreGrupo}</p>
         {ultimoRegistro && (
           <p className="detalle-item">
-            Última vez: {ultimoRegistro.peso_kg} kg × {ultimoRegistro.repeticiones} reps
+            Última vez: {textoSerie(activo.nombre, ultimoRegistro.peso_kg, ultimoRegistro.repeticiones)}
           </p>
         )}
       </div>
@@ -85,7 +87,7 @@ export default function CargaEjercicioFuerza({
       <div className="tabla-series">
         <div className="tabla-series-fila tabla-series-cabecera">
           <span>#</span>
-          <span>Reps</span>
+          <span>{porTiempo ? 'Tiempo (seg)' : 'Reps'}</span>
           <span>Peso (kg)</span>
           <span />
         </div>
@@ -99,7 +101,7 @@ export default function CargaEjercicioFuerza({
               step="1"
               value={s.repeticiones}
               onChange={(e) => cambiar(i, 'repeticiones', e.target.value)}
-              aria-label={`Repeticiones de la serie ${i + 1}`}
+              aria-label={`${porTiempo ? 'Tiempo' : 'Repeticiones'} de la serie ${i + 1}`}
             />
             <input
               type="number"
