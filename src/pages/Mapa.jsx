@@ -131,6 +131,9 @@ export default function Mapa() {
                   {resultado.gano ? `¡Venciste a ${resultado.enemigo}!` : `${resultado.enemigo} fue demasiado. No esta vez.`}
                 </p>
                 {resultado.gano && <p className="resultado-xp">+{resultado.oro_ganado} 🪙</p>}
+                {resultado.gano && resultado.item_raro_nombre && (
+                  <p className="resultado-xp">✨ ¡Objeto raro: {resultado.item_raro_nombre}!</p>
+                )}
                 {resultado.gano && resultado.item_ganado_id && (
                   <p className="detalle-item">¡También encontraste un objeto! Revisalo en el Inventario.</p>
                 )}
