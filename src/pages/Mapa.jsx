@@ -9,6 +9,12 @@ function formatearChance(chance) {
   return `${Math.round(pct)}%`
 }
 
+// Nombre y punto de partida de cada página del mapa (zones.mapa).
+const MAPAS = {
+  1: { nombre: 'El Bosque', inicio: { nombre: 'Pueblo', icono: '🏠' } },
+  2: { nombre: 'Las Cumbres', inicio: { nombre: 'Campamento base', icono: '⛺' } },
+}
+
 const NOMBRES_SLOT = {
   head: 'el casco',
   neck: 'el collar',
@@ -29,6 +35,7 @@ export default function Mapa() {
   const [completadas, setCompletadas] = useState(new Set())
   const [equipado, setEquipado] = useState([])
   const [error, setError] = useState('')
+  const [pagina, setPagina] = useState(null)
 
   // Misión abierta en el popup (al terminar de caminar hasta ella).
   const [zonaActiva, setZonaActiva] = useState(null)
@@ -39,6 +46,12 @@ export default function Mapa() {
     try {
       const [z, p, comp, inv] = await Promise.all([getZones(), getCharacter(), getZonasCompletadas(), getInventory()])
       setZonas(z)
+      // Primera vez: abre la página más avanzada que ya se puede jugar.
+      setPagina((actual) => {
+        if (actual != null) return actual
+        const disponibles = z.filter((x) => !x.zona_padre_id || comp.has(x.zona_padre_id)).map((x) => x.mapa ?? 1)
+        return disponibles.length ? Math.max(...disponibles) : 1
+      })
       setPersonaje(p)
       setCompletadas(comp)
       setEquipado(inv.filter((i) => i.equipado))
@@ -86,14 +99,51 @@ export default function Mapa() {
 
   if (!personaje || zonas.length === 0) return error ? <p className="error">{error}</p> : <p>Cargando mapa...</p>
 
+  const paginas = [...new Set(zonas.map((z) => z.mapa ?? 1))].sort((a, b) => a - b)
+  const paginaActual = paginas.includes(pagina) ? pagina : paginas[0]
+  const zonasPagina = zonas.filter((z) => (z.mapa ?? 1) === paginaActual)
+  const infoPagina = MAPAS[paginaActual] ?? { nombre: `Mapa ${paginaActual}`, inicio: { nombre: 'Inicio', icono: '🚩' } }
+  const idxPagina = paginas.indexOf(paginaActual)
+  const raizPagina = zonasPagina.find((z) => !zonasPagina.some((o) => o.id === z.zona_padre_id))
+  const paginaBloqueada = raizPagina?.zona_padre_id != null && !completadas.has(raizPagina.zona_padre_id)
+  const nombreRequerida = paginaBloqueada ? zonas.find((z) => z.id === raizPagina.zona_padre_id)?.nombre : null
+
   const previewActiva = zonaActiva ? previews[zonaActiva.id] : null
   const porDebajoDeLoRecomendado = zonaActiva ? personaje.nivel < zonaActiva.requisito_nivel : false
   const sinIntentos = previewActiva?.intentos_restantes === 0
 
   return (
     <div className="pagina">
+      {paginas.length > 1 && (
+        <div className="mapa-paginas">
+          <button
+            className="mapa-pagina-flecha"
+            disabled={idxPagina <= 0 || !!zonaActiva}
+            onClick={() => setPagina(paginas[idxPagina - 1])}
+            aria-label="Mapa anterior"
+          >
+            ‹
+          </button>
+          <div className="mapa-pagina-titulo">
+            <strong>{infoPagina.nombre}</strong>
+            <span className="detalle-item">Mapa {idxPagina + 1} de {paginas.length}</span>
+          </div>
+          <button
+            className="mapa-pagina-flecha"
+            disabled={idxPagina >= paginas.length - 1 || !!zonaActiva}
+            onClick={() => setPagina(paginas[idxPagina + 1])}
+            aria-label="Mapa siguiente"
+          >
+            ›
+          </button>
+        </div>
+      )}
+      {paginaBloqueada && <p className="detalle-item mapa-pagina-aviso">🔒 Completá «{nombreRequerida}» para desbloquear este mapa.</p>}
+
       <MapaCaminata
-        zonas={zonas}
+        key={paginaActual}
+        zonas={zonasPagina}
+        inicio={infoPagina.inicio}
         nivel={personaje.nivel}
         apariencia={personaje.apariencia}
         equipado={equipado}

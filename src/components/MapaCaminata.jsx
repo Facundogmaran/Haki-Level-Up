@@ -1,5 +1,5 @@
-// Mapa visual: dibuja el árbol de zonas como un camino con nodos, partiendo
-// del Pueblo. El personaje (AvatarAnimado) recorre el camino nodo por nodo
+// Mapa visual: dibuja el árbol de zonas de UNA página del mapa como un camino
+// con nodos, partiendo del punto de inicio (el Pueblo en el primer mapa). El personaje (AvatarAnimado) recorre el camino nodo por nodo
 // hasta la zona tocada y recién al llegar avisa (onLlegar) para abrir la misión.
 import { useEffect, useRef, useState } from 'react'
 import AvatarAnimado from './AvatarAnimado'
@@ -9,21 +9,20 @@ export const MAPA_VIEWBOX = { w: 300, h: 430 }
 const PUEBLO_ID = 'pueblo'
 const MS_POR_TRAMO = 550 // debe coincidir con la transición de .mapa-personaje
 
-// Posiciones fijas por id de zona. Si se agregan zonas nuevas sin posición
-// definida acá, caen en una fila extra abajo para que el mapa no se rompa.
-const POSICIONES = {
-  [PUEBLO_ID]: { x: 150, y: 32 },
-  1: { x: 150, y: 105 }, // Bosque Lindero
-  2: { x: 70, y: 180 }, // Camino del Bandido
-  3: { x: 230, y: 180 }, // Espesura del Lobo
-  4: { x: 230, y: 255 }, // Campamento Orco
-  5: { x: 150, y: 325 }, // Guarida Orca
-  6: { x: 150, y: 395 }, // Fortaleza del Capitán
-}
+const INICIO = { x: 150, y: 32 }
 
-function posicionDe(id, indiceFallback = 0) {
-  return POSICIONES[id] ?? { x: 150, y: MAPA_VIEWBOX.h + indiceFallback * 70 }
-}
+// Posiciones fijas por lugar dentro de la página (la zona de menor id es el
+// lugar 0, etc.), así todas las páginas comparten el mismo trazado de camino:
+//   0 raíz · 1 y 2 salen de la raíz (izq / der) · 3 sigue a la 2 · 4 · 5
+// Si una página tiene más zonas que lugares, caen en filas extra abajo.
+const LUGARES = [
+  { x: 150, y: 105 },
+  { x: 70, y: 180 },
+  { x: 230, y: 180 },
+  { x: 230, y: 255 },
+  { x: 150, y: 325 },
+  { x: 150, y: 395 },
+]
 
 function direccionEntre(desde, hasta) {
   const dx = hasta.x - desde.x
@@ -32,7 +31,7 @@ function direccionEntre(desde, hasta) {
   return dy > 0 ? 'abajo' : 'arriba'
 }
 
-export default function MapaCaminata({ zonas, nivel, apariencia, equipado, completadas, bloqueado, onLlegar }) {
+export default function MapaCaminata({ zonas, inicio, nivel, apariencia, equipado, completadas, bloqueado, onLlegar }) {
   const [posActualId, setPosActualId] = useState(PUEBLO_ID)
   const [direccion, setDireccion] = useState('abajo')
   const [caminando, setCaminando] = useState(false)
@@ -40,10 +39,19 @@ export default function MapaCaminata({ zonas, nivel, apariencia, equipado, compl
 
   useEffect(() => () => timeoutsRef.current.forEach(clearTimeout), [])
 
-  // La zona raíz del árbol cuelga del Pueblo.
+  const ordenadas = [...zonas].sort((a, b) => a.id - b.id)
+  function posicionDe(id) {
+    if (id === PUEBLO_ID) return INICIO
+    const i = ordenadas.findIndex((z) => z.id === id)
+    return LUGARES[i] ?? { x: 150, y: MAPA_VIEWBOX.h + (i - LUGARES.length + 1) * 70 }
+  }
+
+  // La zona raíz de la página (su padre está en otra página o no existe)
+  // cuelga del punto de inicio.
   function padreDe(id) {
     if (id === PUEBLO_ID) return null
-    return zonas.find((z) => z.id === id)?.zona_padre_id ?? PUEBLO_ID
+    const padre = zonas.find((z) => z.id === id)?.zona_padre_id
+    return padre != null && zonas.some((z) => z.id === padre) ? padre : PUEBLO_ID
   }
 
   function cadenaHaciaLaRaiz(id) {
@@ -97,9 +105,9 @@ export default function MapaCaminata({ zonas, nivel, apariencia, equipado, compl
   return (
     <div className="mapa-lienzo">
       <svg viewBox={`0 0 ${MAPA_VIEWBOX.w} ${MAPA_VIEWBOX.h}`} className="mapa-svg">
-        {zonas.map((z, i) => {
-          const desde = posicionDe(padreDe(z.id), i)
-          const hasta = posicionDe(z.id, i)
+        {zonas.map((z) => {
+          const desde = posicionDe(padreDe(z.id))
+          const hasta = posicionDe(z.id)
           return <line key={z.id} x1={desde.x} y1={desde.y} x2={hasta.x} y2={hasta.y} className="mapa-camino" />
         })}
       </svg>
@@ -111,10 +119,10 @@ export default function MapaCaminata({ zonas, nivel, apariencia, equipado, compl
         onClick={() => irA(PUEBLO_ID)}
       >
         <span className="mapa-nodo-punto" />
-        <span className="mapa-nodo-etiqueta">🏠 Pueblo</span>
+        <span className="mapa-nodo-etiqueta">{inicio?.icono ?? '🏠'} {inicio?.nombre ?? 'Pueblo'}</span>
       </button>
 
-      {zonas.map((z, i) => {
+      {zonas.map((z) => {
         const completada = completadas?.has(z.id)
         const disponible = !z.zona_padre_id || completadas?.has(z.zona_padre_id)
         const riesgosa = nivel < z.requisito_nivel
@@ -128,7 +136,7 @@ export default function MapaCaminata({ zonas, nivel, apariencia, equipado, compl
           <button
             key={z.id}
             className={`mapa-nodo mapa-nodo-${estado} ${z.id === posActualId ? 'mapa-nodo-activo' : ''}`}
-            style={pct(posicionDe(z.id, i))}
+            style={pct(posicionDe(z.id))}
             disabled={!disponible || caminando || bloqueado}
             onClick={() => irA(z.id)}
           >

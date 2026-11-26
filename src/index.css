@@ -1381,3 +1381,36 @@ button.activo {
   font-weight: 400;
   padding: 8px;
 }
+
+/* ---- Páginas del mapa ---- */
+
+.mapa-paginas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mapa-pagina-titulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mapa-pagina-titulo .detalle-item {
+  margin: 0;
+}
+
+.mapa-pagina-flecha {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.mapa-pagina-aviso {
+  text-align: center;
+  margin: 0;
+}

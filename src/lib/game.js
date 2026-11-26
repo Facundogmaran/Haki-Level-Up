@@ -139,7 +139,7 @@ export async function desequiparItem(inventoryId) {
 export async function getZones() {
   const { data, error } = await supabase
     .from('zones')
-    .select('id, nombre, zona_padre_id, orden, requisito_nivel, enemigo:enemies(*)')
+    .select('id, nombre, zona_padre_id, orden, requisito_nivel, mapa, enemigo:enemies(*)')
     .order('orden')
   if (error) throw error
   return data
