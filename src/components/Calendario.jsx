@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { fechaLocalISO } from '../lib/game'
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -6,21 +7,9 @@ const MESES = [
 ]
 const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
-function toFecha(d) {
-  return d.toISOString().slice(0, 10)
-}
-
-// "Hoy" tiene que ser el día en Argentina, no en UTC -- toISOString()
-// convierte a UTC, así que antes de la medianoche ART (que son 3
-// horas menos) ya mostraba el día siguiente.
-function hoyEnArgentina() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
-}
+// Fecha local del dispositivo (toISOString convertiría a UTC y en husos
+// positivos, como Berlín, corría todo un día para atrás).
+const toFecha = fechaLocalISO
 
 function primerDiaSemana(date) {
   // Lunes = 0 ... Domingo = 6
@@ -40,7 +29,7 @@ export default function Calendario({ fechaSeleccionada, diasConEntrenamiento = [
   const diasDelMes = new Date(mesActual.getFullYear(), mesActual.getMonth() + 1, 0).getDate()
   const offset = primerDiaSemana(mesActual)
   const set = new Set(diasConEntrenamiento)
-  const hoy = hoyEnArgentina()
+  const hoy = fechaLocalISO()
 
   const celdas = []
   for (let i = 0; i < offset; i++) celdas.push(null)

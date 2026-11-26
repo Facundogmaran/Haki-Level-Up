@@ -252,3 +252,11 @@ export function esEjercicioPorTiempo(nombre) {
 export function textoSerie(nombre, pesoKg, valor) {
   return esEjercicioPorTiempo(nombre) ? `${pesoKg} kg · ${valor} s` : `${pesoKg} kg × ${valor}`
 }
+
+// Fecha (YYYY-MM-DD) según el reloj del dispositivo, sin pasar por UTC.
+// Se usa para el calendario de entrenamientos: el día es el de donde está
+// la persona (Argentina, Berlín, etc.).
+export function fechaLocalISO(d = new Date()) {
+  const dos = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`
+}

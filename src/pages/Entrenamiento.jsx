@@ -5,6 +5,7 @@ import ResultadoEntrenamiento from '../components/ResultadoEntrenamiento'
 import {
   editarEntrenamiento,
   esEjercicioPorTiempo,
+  fechaLocalISO,
   getDiasConEntrenamientoDelMes,
   getExercises,
   getMuscleGroups,
@@ -16,17 +17,8 @@ import {
 
 const ICONOS_HISTORIAL = { correr: '🏃', bici: '🚴', caminata: '🚶', fuerza: '🏋️', calorias: '🔥' }
 
-// El día "de hoy" tiene que ser el de Argentina, no UTC -- toISOString()
-// convierte a UTC, así que antes de la medianoche ART (3 horas menos)
-// ya mostraba el día siguiente.
-function hoyISO() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
-}
+// El día "de hoy" es el del reloj del dispositivo (no UTC ni un huso fijo).
+const hoyISO = fechaLocalISO
 
 function resumenWorkout(w) {
   if (w.tipo === 'cardio' && w.subtipo === 'caminata') return `${w.pasos} pasos`
